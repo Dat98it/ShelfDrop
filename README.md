@@ -37,13 +37,27 @@ cp -R build/ShelfDrop.app /Applications/
 
 App chưa có chức năng tự chạy khi đăng nhập. Nếu cần, thêm thủ công trong **System Settings → General → Login Items**.
 
-### Chạy trên máy khác
-
-App chỉ được **ký ad-hoc**, chưa ký Developer ID và chưa notarize. Trên máy build thì chạy bình thường, nhưng trên máy khác Gatekeeper có thể chặn. Chuột phải vào app, chọn **Open**, hoặc bỏ cờ cách ly:
+## Đóng gói thành file .dmg
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/ShelfDrop.app
+Scripts/make_dmg.sh           # tạo build/ShelfDrop-<version>.dmg
 ```
+
+Script build bản **universal** (chạy được cả Mac Apple Silicon lẫn Intel) rồi tạo file `.dmg` gồm app và shortcut `Applications`. Người nhận mở file, kéo `ShelfDrop` vào `Applications` là xong. File được tạo trong `build/` nên không bị đưa vào git. Số phiên bản lấy từ `CFBundleShortVersionString` trong [Resources/Info.plist](Resources/Info.plist).
+
+### Cài trên máy khác
+
+App chỉ được **ký ad-hoc**, chưa ký Developer ID và chưa notarize, nên **Gatekeeper sẽ chặn** lần mở đầu tiên trên máy khác (kiểm tra bằng `spctl` cho kết quả `rejected`). Bản `.dmg` hoạt động bình thường, chỉ là người dùng phải cho phép thủ công một lần:
+
+- **macOS 15 trở lên:** mở app một lần (sẽ bị chặn), rồi vào **System Settings → Privacy & Security**, kéo xuống và bấm **Open Anyway**.
+- **macOS 14:** chuột phải vào app, chọn **Open**.
+- **Hoặc dùng terminal**, sau khi đã kéo app vào `Applications`:
+
+  ```bash
+  xattr -dr com.apple.quarantine /Applications/ShelfDrop.app
+  ```
+
+Muốn phát hành cho người khác mà không có cảnh báo này, cần ký bằng chứng chỉ **Developer ID** và **notarize** (yêu cầu tài khoản Apple Developer Program trả phí).
 
 ## Cách dùng
 
@@ -104,7 +118,8 @@ Test dùng **Swift Testing** vì Command Line Tools không có XCTest. Lưu ý k
 ```
 Package.swift
 Resources/Info.plist            LSUIElement = true (app chỉ có menu bar)
-Scripts/build_app.sh            build + ghép .app + ký ad-hoc
+Scripts/build_app.sh            build + ghép .app + ký ad-hoc (thêm đối số `universal` cho cả Intel)
+Scripts/make_dmg.sh             build universal + đóng gói .dmg
 Sources/ShelfDrop/
   main.swift, AppDelegate.swift       khởi động, status item, flush dữ liệu khi thoát
   DragMonitor.swift                   phát hiện drag toàn hệ thống + lắc chuột
@@ -133,6 +148,7 @@ Tests/ShelfDropTests/           49 test
 ## Hạn chế đã biết
 
 - Chỉ chạy trên macOS. Chưa thử trên macOS 14 và 15.
+- Bản `.dmg` có cả slice Intel (x86_64) nhưng slice này mới chỉ được build, **chưa chạy thử** (máy phát triển không có Rosetta). Slice Apple Silicon đã chạy thử từ chính file `.dmg`.
 - Item trên kệ không được giữ lại khi thoát app.
 - **Clear** và nút `x` trên từng tile chỉ gỡ item khỏi kệ, không xóa bản sao tạm. Chỉ nút `x` của kệ làm việc đó (phần còn lại được dọn khi mở app lần sau).
 - Thumbnail ảnh được tạo ngay lúc thả, nên thả cùng lúc nhiều ảnh rất lớn có thể làm giao diện khựng một chút.
@@ -141,7 +157,7 @@ Tests/ShelfDropTests/           49 test
 
 ## Hướng phát triển
 
-Upload lên dịch vụ cloud và lấy link chia sẻ, AirDrop, nén zip, Shortcuts, tự chạy khi đăng nhập, chỉnh độ nhạy lắc, lưu kệ giữa các lần chạy, mục menu để đặt lại vị trí kệ.
+Ký Developer ID và notarize để cài không bị Gatekeeper chặn, upload lên dịch vụ cloud và lấy link chia sẻ, AirDrop, nén zip, Shortcuts, tự chạy khi đăng nhập, chỉnh độ nhạy lắc, lưu kệ giữa các lần chạy, mục menu để đặt lại vị trí kệ.
 
 ## Giấy phép
 
