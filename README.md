@@ -2,6 +2,8 @@
 
 Ứng dụng menu bar cho macOS: một "kệ" tạm thời để gom file từ nhiều nơi rồi kéo cả nhóm đi một lần. Lấy cảm hứng từ Dropover, viết bằng Swift (AppKit + SwiftUI), không cần Xcode để build.
 
+**[⬇ Tải bản cài (.dmg)](https://github.com/Dat98it/ShelfDrop/releases/latest)**: mở file, kéo `ShelfDrop` vào `Applications`. App chưa được notarize nên lần mở đầu macOS sẽ chặn, xem [cách cho phép](#cài-trên-máy-khác).
+
 Khi đang kéo một file, **lắc chuột ngang** và kệ nổi lên ngay dưới con trỏ. Thả file vào kệ, chuyển sang app hoặc thư mục khác, kéo thêm file nữa, rồi kéo cả nhóm ra chỗ đích.
 
 ## Tính năng
