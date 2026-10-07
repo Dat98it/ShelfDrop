@@ -145,4 +145,4 @@ Upload lên dịch vụ cloud và lấy link chia sẻ, AirDrop, nén zip, Short
 
 ## Giấy phép
 
-Chưa chọn giấy phép.
+[MIT](LICENSE).
