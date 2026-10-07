@@ -12,7 +12,7 @@ struct ShelfHitTestTests {
         _ = NSApplication.shared
         let model = ShelfModel()
         model.add(items)
-        let hosting = NSHostingView(rootView: ShelfView(model: model, onClose: {}))
+        let hosting = NSHostingView(rootView: ShelfView(model: model, onClose: {}, onShare: { _ in }))
         hosting.sizingOptions = []
         hosting.frame = NSRect(origin: .zero, size: NSSize(width: ShelfView.defaultSize.width, height: ShelfView.defaultSize.height))
         let window = NSWindow(contentRect: hosting.frame, styleMask: [.borderless], backing: .buffered, defer: false)

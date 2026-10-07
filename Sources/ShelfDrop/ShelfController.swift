@@ -19,10 +19,16 @@ final class ShelfController {
     /// user last dropped it). A move notification that does not differ from this is not a user move.
     private var expectedTopLeft: NSPoint?
     private var pendingPositionSave: Timer?
+    private let sharePresenter: SharePresenting
+    /// Items the user picked a share service for. Their temp copies may still be read by that
+    /// service (an AirDrop transfer can outlive the shelf), so closing the shelf must not delete them.
+    private var sharedItemIDs: Set<ShelfItem.ID> = []
 
     var isShelfVisible: Bool { panel.isVisible }
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = .standard, sharePresenter: SharePresenting? = nil) {
+        // Created here rather than as a default argument: default arguments are not main-actor isolated.
+        self.sharePresenter = sharePresenter ?? SystemSharePresenter()
         sizeStore = ShelfSizeStore(defaults: defaults)
         positionStore = ShelfPositionStore(defaults: defaults)
         preferredSize = sizeStore.load() ?? NSSize(width: ShelfView.defaultSize.width, height: ShelfView.defaultSize.height)
@@ -35,7 +41,11 @@ final class ShelfController {
         container.onTargetChange = { [model] isTargeted in model.isDropTargeted = isTargeted }
         container.onReceive = { [model] items in model.add(items) }
 
-        let hosting = NSHostingView(rootView: ShelfView(model: model, onClose: { [weak self] in self?.close() }))
+        let hosting = NSHostingView(rootView: ShelfView(
+            model: model,
+            onClose: { [weak self] in self?.close() },
+            onShare: { [weak self] items in self?.share(items) }
+        ))
         hosting.sizingOptions = []
         hosting.frame = container.bounds
         hosting.autoresizingMask = [.width, .height]
@@ -74,12 +84,32 @@ final class ShelfController {
 
     /// The shelf's "x" button: hide the panel and forget everything on it.
     /// Items are only references to files, so the originals are never touched;
-    /// only the temp copies this app made itself are deleted.
+    /// only the temp copies this app made itself are deleted, except those that were just
+    /// shared: a share service may still be reading them, so they are left for the next launch's cleanup.
     func close() {
-        let discarded = model.items
+        let discarded = model.items.filter { !sharedItemIDs.contains($0.id) }
+        sharedItemIDs.removeAll()
         model.clear()
         hide()
         TempStorage.discard(discarded)
+    }
+
+    /// Opens the system share menu for `items`, anchored at the mouse (where the user just clicked).
+    /// Files that no longer exist are left out; if nothing is left there is nothing to share.
+    func share(_ items: [ShelfItem]) {
+        let shareable = items.filter { $0.sharingItem != nil }
+        guard !shareable.isEmpty, let view = panel.contentView else { return }
+
+        // Anchor a small rect under the mouse; fall back to the panel's centre if the mouse is
+        // elsewhere (e.g. the action was triggered from the keyboard).
+        let mouseInView = view.convert(panel.convertPoint(fromScreen: NSEvent.mouseLocation), from: nil)
+        let anchor = view.bounds.contains(mouseInView)
+            ? NSRect(x: mouseInView.x - 1, y: mouseInView.y - 1, width: 2, height: 2)
+            : NSRect(x: view.bounds.midX, y: view.bounds.midY, width: 1, height: 1)
+
+        sharePresenter.present(items: shareable.compactMap(\.sharingItem), relativeTo: anchor, of: view) { [weak self] chosen in
+            if chosen { self?.sharedItemIDs.formUnion(shareable.map(\.id)) }
+        }
     }
 
     /// Writes a position change that is still waiting on its debounce timer. Call before quitting.

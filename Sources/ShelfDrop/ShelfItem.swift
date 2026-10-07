@@ -37,6 +37,16 @@ struct ShelfItem: Identifiable {
         }
     }
 
+    /// What the share sheet receives for this item, or nil if it cannot be shared right now
+    /// (a file that was moved or deleted after being added).
+    var sharingItem: Any? {
+        switch kind {
+        case .file(let url): return isMissing ? nil : url as NSURL
+        case .link(let url): return url as NSURL
+        case .text(let string): return string as NSString
+        }
+    }
+
     /// True when a referenced file was moved or deleted after being added.
     var isMissing: Bool {
         guard case .file(let url) = kind else { return false }

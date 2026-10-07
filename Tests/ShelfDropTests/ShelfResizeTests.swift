@@ -75,9 +75,9 @@ struct ShelfResizeTests {
         let controller = makeShownController()
         let before = controller.panel.frame
 
-        dragGrip(of: controller.panel, dx: -40, dy: 30)  // left and up, a modest shrink
+        dragGrip(of: controller.panel, dx: -20, dy: 30)  // left and up, a modest shrink
         let shrunk = controller.panel.frame
-        #expect(shrunk.width == before.width - 40)
+        #expect(shrunk.width == before.width - 20)
         #expect(shrunk.height == before.height - 30)
 
         dragGrip(of: controller.panel, dx: -5000, dy: 5000)  // far past the minimum

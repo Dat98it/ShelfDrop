@@ -11,8 +11,9 @@ Khi đang kéo một file, **lắc chuột ngang** và kệ nổi lên ngay dư�
 - **Lắc để mở kệ** khi đang kéo file, ảnh, link hoặc văn bản. Kệ không cướp focus của app bạn đang dùng, và được cấu hình để nổi trên mọi Space và cả app fullscreen.
 - **Gom nhiều loại dữ liệu:** file, ảnh kéo từ trình duyệt, link, văn bản, và file "hứa" (file promise) từ Mail, Photos...
 - **Kéo ra ngoài** từng item hoặc cả nhóm bằng nút **Drag all**. Chỉ thao tác copy, không bao giờ di chuyển file gốc của bạn.
+- **Chia sẻ** bằng hộp thoại chia sẻ của macOS (AirDrop, Mail, Messages, Notes...): nút ở header chia sẻ cả kệ, nút ở góc trên trái mỗi tile chia sẻ riêng item đó. File đã bị đổi tên hoặc xóa sẽ bị bỏ qua.
 - **Dọn dẹp:** nút `x` trên từng tile gỡ một item, **Clear** gỡ tất cả, và nút `x` của kệ đóng kệ, xóa toàn bộ item cùng các bản sao tạm app đã tạo.
-- **Di chuyển và đổi cỡ:** kéo vào chỗ trống của kệ để di chuyển, kéo tay nắm ở góc dưới phải để phóng to hoặc thu nhỏ (tối thiểu 260×180, tối đa bằng vùng hiển thị của màn hình).
+- **Di chuyển và đổi cỡ:** kéo vào chỗ trống của kệ để di chuyển, kéo tay nắm ở góc dưới phải để phóng to hoặc thu nhỏ (tối thiểu 310×180, tối đa bằng vùng hiển thị của màn hình).
 - **Nhớ kích thước và vị trí** kệ, kể cả sau khi thoát app.
 - **Tự ẩn** nếu kệ còn trống khi cú kéo kết thúc ở chỗ khác.
 - Chỉ có icon trên menu bar (Show/Hide Shelf, Clear Shelf, Quit), không có icon Dock.
@@ -88,7 +89,7 @@ Lần đầu kệ hiện giữa con trỏ. Nếu nó che file bạn cần, hãy 
 | Thứ | Lưu ở đâu |
 |---|---|
 | Kích thước, vị trí kệ | `UserDefaults` của `local.shelfdrop.app`: `shelfWidth`, `shelfHeight`, `shelfTopLeftX`, `shelfTopLeftY` |
-| Bản sao tạm (ảnh từ trình duyệt, file promise) | `$TMPDIR/ShelfDrop/`. Được xóa khi mở app và khi bấm `x` của kệ |
+| Bản sao tạm (ảnh từ trình duyệt, file promise) | `$TMPDIR/ShelfDrop/`. Được xóa khi mở app và khi bấm `x` của kệ, trừ bản sao của item vừa được chia sẻ (xem Hạn chế) |
 | Item trên kệ | Chỉ trong bộ nhớ, **không lưu khi thoát app** |
 
 File kéo từ Finder được giữ dưới dạng **tham chiếu**, không sao chép. Nếu file gốc bị đổi tên hoặc xóa sau khi đã thả vào kệ, tile sẽ mờ đi và ghi `(missing)`.
@@ -128,6 +129,7 @@ Sources/ShelfDrop/
   ShakeDetector.swift                 logic lắc thuần, dễ test
   ShelfController.swift               nối monitor, panel, model; đặt vị trí, kích thước
   ShelfPanel.swift                    NSPanel nổi, không kích hoạt app
+  SharePresenting.swift               hộp thoại chia sẻ của hệ thống (NSSharingServicePicker)
   ShelfView.swift                     giao diện SwiftUI của kệ
   ShelfModel.swift, ShelfItem.swift   dữ liệu item, thumbnail, thư mục tạm
   PasteboardImporter.swift            đọc dữ liệu kéo vào (file, promise, ảnh, link, text)
@@ -136,7 +138,7 @@ Sources/ShelfDrop/
   WindowDragArea.swift                kéo chỗ trống để di chuyển kệ
   ResizeGrip.swift                    tay nắm đổi kích thước
   ShelfSizeStore.swift, ShelfPositionStore.swift   lưu kích thước, vị trí
-Tests/ShelfDropTests/           49 test
+Tests/ShelfDropTests/           60 test
 ```
 
 ### Cách hoạt động
@@ -152,6 +154,8 @@ Tests/ShelfDropTests/           49 test
 - Chỉ chạy trên macOS. Chưa thử trên macOS 14 và 15.
 - Bản `.dmg` có cả slice Intel (x86_64) nhưng slice này mới chỉ được build, **chưa chạy thử** (máy phát triển không có Rosetta). Slice Apple Silicon đã chạy thử từ chính file `.dmg`.
 - Item trên kệ không được giữ lại khi thoát app.
+- Khi bấm `x` của kệ, bản sao tạm của item **vừa được chia sẻ** không bị xóa ngay: một dịch vụ như AirDrop có thể vẫn đang đọc file đó, xóa giữa chừng sẽ làm hỏng lần gửi. Các bản sao này được dọn khi mở app lần sau.
+- Chia sẻ đã được thử thật bằng chuột, nhưng không thể thử với mọi dịch vụ chia sẻ có trên máy. Bộ test dùng hộp thoại giả, nên phần hộp thoại thật của macOS không nằm trong test tự động.
 - **Clear** và nút `x` trên từng tile chỉ gỡ item khỏi kệ, không xóa bản sao tạm. Chỉ nút `x` của kệ làm việc đó (phần còn lại được dọn khi mở app lần sau).
 - Thumbnail ảnh được tạo ngay lúc thả, nên thả cùng lúc nhiều ảnh rất lớn có thể làm giao diện khựng một chút.
 - Chỉ nhận lắc theo chiều ngang. Độ nhạy chưa chỉnh được trong giao diện.
@@ -159,7 +163,7 @@ Tests/ShelfDropTests/           49 test
 
 ## Hướng phát triển
 
-Ký Developer ID và notarize để cài không bị Gatekeeper chặn, upload lên dịch vụ cloud và lấy link chia sẻ, AirDrop, nén zip, Shortcuts, tự chạy khi đăng nhập, chỉnh độ nhạy lắc, lưu kệ giữa các lần chạy, mục menu để đặt lại vị trí kệ.
+Ký Developer ID và notarize để cài không bị Gatekeeper chặn, upload lên dịch vụ cloud và lấy link chia sẻ, nén zip, Shortcuts, tự chạy khi đăng nhập, chỉnh độ nhạy lắc, lưu kệ giữa các lần chạy, mục menu để đặt lại vị trí kệ.
 
 ## Giấy phép
 
