@@ -19,7 +19,8 @@ Khi đang kéo một file, **lắc chuột ngang** và kệ nổi lên ngay dư�
 - **Di chuyển và đổi cỡ:** kéo vào chỗ trống của kệ để di chuyển, kéo tay nắm ở góc dưới phải để phóng to hoặc thu nhỏ (tối thiểu 340×190, tối đa bằng vùng hiển thị của màn hình).
 - **Nhớ kích thước và vị trí** kệ, kể cả sau khi thoát app.
 - **Tự ẩn** nếu kệ còn trống khi cú kéo kết thúc ở chỗ khác.
-- Chỉ có icon trên menu bar (Show/Hide Shelf, Clear Shelf, Quit), không có icon Dock.
+- **Tự chạy khi đăng nhập:** bật mục **Launch at Login** trong menu của icon trên menu bar (dấu tích cho biết đang bật).
+- Chỉ có icon trên menu bar (Show/Hide Shelf, Clear Shelf, Launch at Login, Quit), không có icon Dock. App có icon riêng, hiện trong Finder, Launchpad và Spotlight.
 
 ## Ảnh chụp màn hình
 
@@ -59,7 +60,7 @@ Dùng `Scripts/build_app.sh debug` để build bản debug. Muốn cài vào má
 cp -R build/ShelfDrop.app /Applications/
 ```
 
-App chưa có chức năng tự chạy khi đăng nhập. Nếu cần, thêm thủ công trong **System Settings → General → Login Items**.
+Muốn app tự chạy khi đăng nhập, bật **Launch at Login** trong menu của icon trên menu bar (nên làm với bản đã cài trong `/Applications`, vì macOS ghi nhớ đúng vị trí của app đang chạy). Lần đầu macOS có thể yêu cầu cho phép trong **System Settings → General → Login Items**; khi đó mục này hiện dấu gạch và mở sẵn trang cài đặt cho bạn.
 
 ## Đóng gói thành file .dmg
 
@@ -127,15 +128,16 @@ defaults delete local.shelfdrop.app shelfTopLeftX; defaults delete local.shelfdr
 ## Phát triển
 
 ```bash
-swift build        # biên dịch
-swift test         # chạy bộ test
+swift build                        # biên dịch
+swift test                         # chạy bộ test
+swift Scripts/make_icon.swift      # vẽ lại icon: ghi Resources/AppIcon.icns (thêm tham số thứ hai để xuất ảnh PNG xem thử)
 ```
 
 Test dùng **Swift Testing** vì Command Line Tools không có XCTest. Lưu ý khi chạy test:
 
 - Test tạo và hiển thị panel thật, nên cần phiên đăng nhập có giao diện (không chạy được trên máy không có display). Panel có thể nhấp nháy trên màn hình trong lúc chạy.
 - Lần `swift test` đầu tiên sau khi sửa source đôi khi báo `plugin for module 'TestingMacros' not found`. Đây là lỗi của môi trường, chạy lại là được.
-- Test không đụng vào cấu hình thật: mỗi test dùng một vùng `UserDefaults` riêng và tự xóa khi xong.
+- Test không đụng vào cấu hình thật: mỗi test dùng một vùng `UserDefaults` riêng và tự xóa khi xong, và mục Launch at Login được test qua một đối tượng giả nên không thay đổi Login Items của máy bạn.
 
 ### Cấu trúc
 
@@ -143,10 +145,13 @@ Test dùng **Swift Testing** vì Command Line Tools không có XCTest. Lưu ý k
 Package.swift
 Images/                         ảnh chụp màn hình cho README và quảng bá (bản gốc 2400×1500)
 Resources/Info.plist            LSUIElement = true (app chỉ có menu bar)
+Resources/AppIcon.icns          icon của app (tạo bằng Scripts/make_icon.swift)
 Scripts/build_app.sh            build + ghép .app + ký ad-hoc (thêm đối số `universal` cho cả Intel)
 Scripts/make_dmg.sh             build universal + đóng gói .dmg
+Scripts/make_icon.swift         vẽ icon bằng code và xuất ra Resources/AppIcon.icns
 Sources/ShelfDrop/
   main.swift, AppDelegate.swift       khởi động, status item, flush dữ liệu khi thoát
+  LaunchAtLogin.swift                 mục Launch at Login (SMAppService), tách riêng để test được
   DragMonitor.swift                   phát hiện drag toàn hệ thống + lắc chuột
   ShakeDetector.swift                 logic lắc thuần, dễ test
   ShelfController.swift               nối monitor, panel, model; đặt vị trí, kích thước
@@ -162,7 +167,7 @@ Sources/ShelfDrop/
   WindowDragArea.swift                kéo chỗ trống để di chuyển kệ
   ResizeGrip.swift                    tay nắm đổi kích thước
   ShelfSizeStore.swift, ShelfPositionStore.swift   lưu kích thước, vị trí
-Tests/ShelfDropTests/           77 test
+Tests/ShelfDropTests/           88 test
 ```
 
 ### Cách hoạt động
@@ -187,7 +192,7 @@ Tests/ShelfDropTests/           77 test
 
 ## Hướng phát triển
 
-Ký Developer ID và notarize để cài không bị Gatekeeper chặn, upload lên dịch vụ cloud và lấy link chia sẻ, nén zip, Shortcuts, tự chạy khi đăng nhập, chỉnh độ nhạy lắc, lưu kệ giữa các lần chạy, mục menu để đặt lại vị trí kệ.
+Ký Developer ID và notarize để cài không bị Gatekeeper chặn, upload lên dịch vụ cloud và lấy link chia sẻ, nén zip, Shortcuts, chỉnh độ nhạy lắc, lưu kệ giữa các lần chạy, mục menu để đặt lại vị trí kệ.
 
 ## Giấy phép
 
