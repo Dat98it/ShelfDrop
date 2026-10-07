@@ -1,9 +1,11 @@
 import AppKit
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var statusItem: NSStatusItem?
     private let shelf = ShelfController()
+    private let launchAtLogin = LaunchAtLogin(service: SystemLoginItemService())
+    private var launchAtLoginItem: NSMenuItem?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         TempStorage.cleanUp()
@@ -32,7 +34,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(withTitle: "Show/Hide Shelf", action: #selector(toggleShelf), keyEquivalent: "").target = self
         menu.addItem(withTitle: "Clear Shelf", action: #selector(clearShelf), keyEquivalent: "").target = self
         menu.addItem(.separator())
+        let loginItem = menu.addItem(withTitle: "Launch at Login", action: #selector(toggleLaunchAtLogin), keyEquivalent: "")
+        loginItem.target = self
+        loginItem.state = launchAtLogin.menuState
+        launchAtLoginItem = loginItem
+        menu.addItem(.separator())
         menu.addItem(withTitle: "Quit ShelfDrop", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
+        // The setting can change outside the app (System Settings), so refresh it each time the menu opens.
+        menu.delegate = self
         item.menu = menu
         statusItem = item
     }
@@ -43,5 +52,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func clearShelf() {
         shelf.clear()
+    }
+
+    @objc private func toggleLaunchAtLogin() {
+        if case .failed(let message) = launchAtLogin.toggle() {
+            let alert = NSAlert()
+            alert.alertStyle = .warning
+            alert.messageText = "Couldn't change Launch at Login"
+            alert.informativeText = message
+            // An accessory app is never frontmost, so bring it forward or the alert hides behind other windows.
+            NSApp.activate()
+            alert.runModal()
+        }
+        launchAtLoginItem?.state = launchAtLogin.menuState
+    }
+
+    func menuNeedsUpdate(_ menu: NSMenu) {
+        launchAtLoginItem?.state = launchAtLogin.menuState
     }
 }
