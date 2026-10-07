@@ -15,18 +15,50 @@ struct ShelfItem: Identifiable {
     let kind: Kind
     let title: String
     let thumbnail: NSImage
+    /// Short human label for what this is: "Image", "PDF", "Folder", "Link", "Text"...
+    let kindLabel: String
+    /// Size of a plain file; nil for folders, links and text.
+    let byteCount: Int64?
+    /// True for image files, which get a photo-style thumbnail.
+    let isImageFile: Bool
 
     static func file(_ url: URL) -> ShelfItem {
-        ShelfItem(kind: .file(url), title: url.lastPathComponent, thumbnail: Thumbnails.forFile(url))
+        let facts = FileFacts.describe(url)
+        return ShelfItem(
+            kind: .file(url), title: url.lastPathComponent, thumbnail: Thumbnails.forFile(url),
+            kindLabel: facts.kindLabel, byteCount: facts.byteCount, isImageFile: facts.isImage
+        )
     }
 
     static func link(_ url: URL) -> ShelfItem {
-        ShelfItem(kind: .link(url), title: url.host ?? url.absoluteString, thumbnail: Thumbnails.symbol("link"))
+        ShelfItem(
+            kind: .link(url), title: url.host ?? url.absoluteString, thumbnail: Thumbnails.symbol("link"),
+            kindLabel: "Link", byteCount: nil, isImageFile: false
+        )
     }
 
     static func text(_ string: String) -> ShelfItem {
         let firstLine = string.split(whereSeparator: \.isNewline).first.map(String.init) ?? string
-        return ShelfItem(kind: .text(string), title: String(firstLine.prefix(40)), thumbnail: Thumbnails.symbol("text.alignleft"))
+        return ShelfItem(
+            kind: .text(string), title: String(firstLine.prefix(40)), thumbnail: Thumbnails.symbol("text.alignleft"),
+            kindLabel: "Text", byteCount: nil, isImageFile: false
+        )
+    }
+
+    /// Second line of a tile: the kind and, for files, the size ("Image · 24 KB").
+    var detail: String {
+        [kindLabel, byteCount.map { ByteCountFormatter.string(fromByteCount: $0, countStyle: .file) }]
+            .compactMap { $0 }
+            .joined(separator: " · ")
+    }
+
+    /// Header subtitle for a whole shelf: "7 items · 1.2 MB". Sizes only count plain files.
+    static func summary(of items: [ShelfItem]) -> String {
+        guard !items.isEmpty else { return "Empty" }
+        var parts = ["\(items.count) \(items.count == 1 ? "item" : "items")"]
+        let total = items.compactMap(\.byteCount).reduce(0, +)
+        if total > 0 { parts.append(ByteCountFormatter.string(fromByteCount: total, countStyle: .file)) }
+        return parts.joined(separator: " · ")
     }
 
     /// What gets written to the drag pasteboard when this item is dragged out.
@@ -51,6 +83,43 @@ struct ShelfItem: Identifiable {
     var isMissing: Bool {
         guard case .file(let url) = kind else { return false }
         return !FileManager.default.fileExists(atPath: url.path)
+    }
+}
+
+/// Kind and size of a file, for the second line of its tile.
+enum FileFacts {
+    struct Facts {
+        var kindLabel: String
+        var byteCount: Int64?
+        var isImage: Bool
+    }
+
+    static func describe(_ url: URL) -> Facts {
+        let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isApplicationKey, .contentTypeKey, .fileSizeKey])
+        let isDirectory = values?.isDirectory ?? false
+        let type = values?.contentType ?? UTType(filenameExtension: url.pathExtension)
+        return Facts(
+            kindLabel: kindLabel(for: type, isDirectory: isDirectory, isApplication: values?.isApplication ?? false, fileExtension: url.pathExtension),
+            byteCount: isDirectory ? nil : values?.fileSize.map(Int64.init),
+            isImage: !isDirectory && (type?.conforms(to: .image) ?? false)
+        )
+    }
+
+    static func kindLabel(for type: UTType?, isDirectory: Bool, isApplication: Bool, fileExtension: String) -> String {
+        if isApplication { return "App" }
+        if isDirectory { return "Folder" }
+        if let type {
+            if type.conforms(to: .image) { return "Image" }
+            if type.conforms(to: .pdf) { return "PDF" }
+            if type.conforms(to: .movie) { return "Video" }
+            if type.conforms(to: .audio) { return "Audio" }
+            if type.conforms(to: .archive) { return "Archive" }
+            if type.conforms(to: .spreadsheet) { return "Sheet" }
+            if type.conforms(to: .presentation) { return "Slides" }
+            if type.conforms(to: .sourceCode) { return "Code" }
+            if type.conforms(to: .text) { return "Text" }
+        }
+        return fileExtension.isEmpty ? "File" : fileExtension.uppercased()
     }
 }
 

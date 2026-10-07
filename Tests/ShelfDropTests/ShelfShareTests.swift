@@ -40,52 +40,50 @@ struct ShelfShareTests {
 
     // MARK: - The buttons
 
-    /// Clicks at `point` (window coordinates, origin bottom-left) with a real mouse down/up pair.
-    private func click(_ controller: ShelfController, at point: NSPoint) {
-        for type in [NSEvent.EventType.leftMouseDown, .leftMouseUp] {
-            let event = NSEvent.mouseEvent(
-                with: type, location: point, modifierFlags: [], timestamp: ProcessInfo.processInfo.systemUptime,
-                windowNumber: controller.panel.windowNumber, context: nil, eventNumber: 0, clickCount: 1, pressure: 1
-            )!
-            controller.panel.sendEvent(event)
-            // SwiftUI runs button actions asynchronously; let it process the event.
-            RunLoop.current.run(until: Date().addingTimeInterval(0.02))
-        }
-    }
-
     private func makeShownController(items: [ShelfItem]) -> ShelfController {
         let controller = makeController()
         controller.model.add(items)
         controller.show(near: NSPoint(x: 700, y: 700))
-        // A freshly shown panel has not laid out its SwiftUI content yet; clicks before that are lost.
-        controller.panel.contentView?.layoutSubtreeIfNeeded()
-        RunLoop.current.run(until: Date().addingTimeInterval(0.2))
+        PanelProbe.settle(controller.panel)
         return controller
     }
 
-    @Test func clickingTheHeaderShareButtonSharesEveryItem() {
+    @Test func clickingTheHeaderShareButtonSharesEveryItem() throws {
         let controller = makeShownController(items: [.text("one"), .text("two"), .text("three")])
-        let height = controller.panel.frame.height
+        // With items on the shelf the header has Share, Clear and Close, left to right.
+        let buttons = PanelProbe.headerButtonRects(in: controller.panel)
+        try #require(buttons.count == 3)
 
-        // Probing the hit area showed the icon-only Share button spans roughly x 146-173,
-        // 15-30pt below the top edge, just left of "Drag all".
-        click(controller, at: NSPoint(x: 160, y: height - 22))
+        PanelProbe.click(PanelProbe.centre(of: buttons[0]), in: controller.panel)
 
         #expect(presenter.presented.count == 1)
         #expect(presenter.presented.first?.count == 3)
     }
 
-    @Test func clickingATilesShareButtonSharesOnlyThatItem() {
+    @Test func clickingATilesShareButtonSharesOnlyThatItem() throws {
         let controller = makeShownController(items: [.text("one"), .text("two"), .text("three")])
-        let height = controller.panel.frame.height
+        let cards = PanelProbe.cardRects(in: controller.panel)
+        try #require(cards.count == 3)
 
-        // The tile's share button sits in its top-left corner (probed: x 30-39, 48-57pt below the top).
-        click(controller, at: NSPoint(x: 34, y: height - 52))
+        // The corner buttons only exist while the mouse is over the card.
+        PanelProbe.hover(card: cards[0], in: controller.panel)
+        PanelProbe.click(PanelProbe.shareButtonCentre(ofCard: cards[0]), in: controller.panel)
 
         #expect(presenter.presented.count == 1)
         let items = presenter.presented.first ?? []
         #expect(items.count == 1)
         #expect((items.first as? NSString) == "one")
+    }
+
+    @Test func aTilesShareButtonDoesNothingUntilTheMouseIsOverIt() throws {
+        let controller = makeShownController(items: [.text("one"), .text("two")])
+        let cards = PanelProbe.cardRects(in: controller.panel)
+        try #require(cards.count == 2)
+
+        // Same spot as above, but without hovering: it must not act like a hidden button.
+        PanelProbe.click(PanelProbe.shareButtonCentre(ofCard: cards[0]), in: controller.panel)
+
+        #expect(presenter.presented.isEmpty)
     }
 
     // MARK: - What gets shared
