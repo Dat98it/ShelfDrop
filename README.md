@@ -4,6 +4,8 @@
 
 **[⬇ Tải bản cài (.dmg)](https://github.com/Dat98it/ShelfDrop/releases/latest)**: mở file, kéo `ShelfDrop` vào `Applications`. App chưa được notarize nên lần mở đầu macOS sẽ chặn, xem [cách cho phép](#cài-trên-máy-khác).
 
+<p align="center"><img src="Images/01-hero-dark.png" alt="ShelfDrop: kệ nổi trên màn hình macOS, chứa ảnh, PDF, thư mục, file zip, link và ghi chú" width="880"></p>
+
 Khi đang kéo một file, **lắc chuột ngang** và kệ nổi lên ngay dưới con trỏ. Thả file vào kệ, chuyển sang app hoặc thư mục khác, kéo thêm file nữa, rồi kéo cả nhóm ra chỗ đích.
 
 ## Tính năng
@@ -11,12 +13,31 @@ Khi đang kéo một file, **lắc chuột ngang** và kệ nổi lên ngay dư�
 - **Lắc để mở kệ** khi đang kéo file, ảnh, link hoặc văn bản. Kệ không cướp focus của app bạn đang dùng, và được cấu hình để nổi trên mọi Space và cả app fullscreen.
 - **Gom nhiều loại dữ liệu:** file, ảnh kéo từ trình duyệt, link, văn bản, và file "hứa" (file promise) từ Mail, Photos...
 - **Kéo ra ngoài** từng item hoặc cả nhóm bằng nút **Drag all**. Chỉ thao tác copy, không bao giờ di chuyển file gốc của bạn.
-- **Chia sẻ** bằng hộp thoại chia sẻ của macOS (AirDrop, Mail, Messages, Notes...): nút ở header chia sẻ cả kệ, nút ở góc trên trái mỗi tile chia sẻ riêng item đó. File đã bị đổi tên hoặc xóa sẽ bị bỏ qua.
-- **Dọn dẹp:** nút `x` trên từng tile gỡ một item, **Clear** gỡ tất cả, và nút `x` của kệ đóng kệ, xóa toàn bộ item cùng các bản sao tạm app đã tạo.
-- **Di chuyển và đổi cỡ:** kéo vào chỗ trống của kệ để di chuyển, kéo tay nắm ở góc dưới phải để phóng to hoặc thu nhỏ (tối thiểu 310×180, tối đa bằng vùng hiển thị của màn hình).
+- **Chia sẻ** bằng hộp thoại chia sẻ của macOS (AirDrop, Mail, Messages, Notes...): nút ở header chia sẻ cả kệ, nút ở góc trên trái mỗi thẻ chia sẻ riêng item đó. File đã bị đổi tên hoặc xóa sẽ bị bỏ qua.
+- **Giao diện gọn:** mỗi item là một thẻ có thumbnail, tên, loại và dung lượng ("Image · 232 KB"); header cho biết tổng số item và dung lượng. Nút chia sẻ và gỡ của thẻ chỉ hiện khi rê chuột lên (chuột phải cũng có menu), màn hình trống hiện vùng thả rõ ràng và gợi ý cách mở kệ. Giao diện theo chế độ sáng/tối của macOS.
+- **Dọn dẹp:** nút `x` trên từng thẻ gỡ một item, **Clear** gỡ tất cả, và nút `x` ở header đóng kệ, xóa toàn bộ item cùng các bản sao tạm app đã tạo.
+- **Di chuyển và đổi cỡ:** kéo vào chỗ trống của kệ để di chuyển, kéo tay nắm ở góc dưới phải để phóng to hoặc thu nhỏ (tối thiểu 340×190, tối đa bằng vùng hiển thị của màn hình).
 - **Nhớ kích thước và vị trí** kệ, kể cả sau khi thoát app.
 - **Tự ẩn** nếu kệ còn trống khi cú kéo kết thúc ở chỗ khác.
 - Chỉ có icon trên menu bar (Show/Hide Shelf, Clear Shelf, Quit), không có icon Dock.
+
+## Ảnh chụp màn hình
+
+Ba trạng thái của kệ:
+
+**Rê chuột lên một thẻ** để hiện nút chia sẻ (trên trái) và gỡ khỏi kệ (trên phải):
+
+<p align="center"><img src="Images/readme/hover-actions-dark.png" alt="Rê chuột lên thẻ Lake.png: hiện nút chia sẻ và nút gỡ ở hai góc" width="740"></p>
+
+**Kéo file qua kệ trống:** vùng thả chuyển sang viền liền màu xanh và ghi "Release to add".
+
+<p align="center"><img src="Images/readme/release-to-add-dark.png" alt="Kệ trống khi đang kéo file qua: viền xanh và dòng Release to add" width="740"></p>
+
+**Kệ trống:** vùng thả viền đứt kèm gợi ý cách mở kệ bằng cách lắc chuột.
+
+<p align="center"><img src="Images/readme/empty-state-light.png" alt="Kệ trống ở chế độ sáng: vùng thả viền đứt và gợi ý lắc chuột" width="740"></p>
+
+Bản độ phân giải cao, ảnh cận cảnh và các cảnh toàn màn hình (chế độ sáng và tối) nằm trong thư mục [`Images/`](Images).
 
 ## Yêu cầu
 
@@ -120,6 +141,7 @@ Test dùng **Swift Testing** vì Command Line Tools không có XCTest. Lưu ý k
 
 ```
 Package.swift
+Images/                         ảnh chụp màn hình cho README và quảng bá (bản gốc 2400×1500)
 Resources/Info.plist            LSUIElement = true (app chỉ có menu bar)
 Scripts/build_app.sh            build + ghép .app + ký ad-hoc (thêm đối số `universal` cho cả Intel)
 Scripts/make_dmg.sh             build universal + đóng gói .dmg
@@ -130,7 +152,9 @@ Sources/ShelfDrop/
   ShelfController.swift               nối monitor, panel, model; đặt vị trí, kích thước
   ShelfPanel.swift                    NSPanel nổi, không kích hoạt app
   SharePresenting.swift               hộp thoại chia sẻ của hệ thống (NSSharingServicePicker)
-  ShelfView.swift                     giao diện SwiftUI của kệ
+  ShelfView.swift                     giao diện SwiftUI: header, thẻ item, màn hình trống
+  ShelfStyle.swift                    kích thước chung và kiểu nút thống nhất
+  HoverReader.swift                   phát hiện rê chuột (hoạt động cả khi cửa sổ không phải key)
   ShelfModel.swift, ShelfItem.swift   dữ liệu item, thumbnail, thư mục tạm
   PasteboardImporter.swift            đọc dữ liệu kéo vào (file, promise, ảnh, link, text)
   DropContainerView.swift             nhận drop cho cả panel
@@ -138,7 +162,7 @@ Sources/ShelfDrop/
   WindowDragArea.swift                kéo chỗ trống để di chuyển kệ
   ResizeGrip.swift                    tay nắm đổi kích thước
   ShelfSizeStore.swift, ShelfPositionStore.swift   lưu kích thước, vị trí
-Tests/ShelfDropTests/           60 test
+Tests/ShelfDropTests/           77 test
 ```
 
 ### Cách hoạt động
