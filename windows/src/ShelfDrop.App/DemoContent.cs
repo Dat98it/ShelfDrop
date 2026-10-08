@@ -45,18 +45,18 @@ namespace ShelfDrop.App
 
         /// <summary>
         /// A shelf that looks good in a picture: a few photos, a PDF, a folder, an archive, a link and a note. Sizes are made
-        /// to look like real ones. <paramref name="count"/> is 6 (the default shelf) or 9 (a wide one).
+        /// to look like real ones. <paramref name="count"/> is 6 (the default shelf) or 10 (a wide one: two full rows of five).
         /// </summary>
         public static IReadOnlyList<ShelfItem> CreateForPictures(TempStorage temp, int count)
         {
             string folder = temp.MakeDirectory();
 
-            string sunset = Path.Combine(folder, "Sunset over the bay.png");
-            string mountains = Path.Combine(folder, "Mountain trail.png");
+            string sunset = Path.Combine(folder, "Sunset.png");
+            string mountains = Path.Combine(folder, "Mountains.png");
             WritePhoto(sunset, Photo.Sunset);
             WritePhoto(mountains, Photo.Mountains);
 
-            string report = Path.Combine(folder, "Quarterly report.pdf");
+            string report = Path.Combine(folder, "Q3 report.pdf");
             File.WriteAllBytes(report, Filler("%PDF-1.7\n", 2_516_582));   // 2.4 MB
 
             string assets = Path.Combine(folder, "Project assets");
@@ -72,11 +72,11 @@ namespace ShelfDrop.App
 
             if (count <= 6) return new[] { photo, link, pdf, projectFolder, note, trail };
 
-            string aurora = Path.Combine(folder, "Northern lights.png");
-            string ocean = Path.Combine(folder, "Ocean morning.png");
+            string aurora = Path.Combine(folder, "Aurora.png");
+            string ocean = Path.Combine(folder, "Ocean.png");
             WritePhoto(aurora, Photo.Aurora);
             WritePhoto(ocean, Photo.Ocean);
-            string archive = Path.Combine(folder, "Design files.zip");
+            string archive = Path.Combine(folder, "Designs.zip");
             using (ZipArchive zip = ZipFile.Open(archive, ZipArchiveMode.Create))
             {
                 using (Stream entry = zip.CreateEntry("mockups.bin", CompressionLevel.NoCompression).Open())
@@ -87,6 +87,7 @@ namespace ShelfDrop.App
             {
                 photo, link, pdf, trail, projectFolder,
                 note, ShelfItem.ForFile(aurora), ShelfItem.ForFile(archive), ShelfItem.ForFile(ocean),
+                ShelfItem.ForLink(new Uri("https://figma.com/files/team/shelfdrop")),
             };
         }
 

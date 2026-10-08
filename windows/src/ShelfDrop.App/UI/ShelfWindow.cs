@@ -237,12 +237,7 @@ namespace ShelfDrop.App.UI
             try
             {
                 UpdateLayout();
-                int width = (int)Math.Round(_root.ActualWidth * scale);
-                int height = (int)Math.Round(_root.ActualHeight * scale);
-                var bitmap = new RenderTargetBitmap(width, height, 96 * scale, 96 * scale, PixelFormats.Pbgra32);
-                bitmap.Render(_root);
-                bitmap.Freeze();
-                return bitmap;
+                return RenderElement(_root, scale);
             }
             finally
             {
@@ -250,15 +245,39 @@ namespace ShelfDrop.App.UI
             }
         }
 
+        /// <summary>
+        /// An element as a picture, starting at its own top-left corner. Rendering the element directly would draw it where its parent
+        /// puts it, shifted by its margin and cut off at the far edges; drawing it through a brush with an absolute view box does not.
+        /// </summary>
+        private static RenderTargetBitmap RenderElement(FrameworkElement element, double scale)
+        {
+            double width = element.ActualWidth;
+            double height = element.ActualHeight;
+            var visual = new DrawingVisual();
+            using (DrawingContext context = visual.RenderOpen())
+            {
+                var brush = new VisualBrush(element)
+                {
+                    ViewboxUnits = BrushMappingMode.Absolute,
+                    Viewbox = new Rect(0, 0, width, height),
+                    Stretch = Stretch.Fill,
+                };
+                context.DrawRectangle(brush, null, new Rect(0, 0, width, height));
+            }
+
+            var bitmap = new RenderTargetBitmap(
+                Math.Max(1, (int)Math.Round(width * scale)), Math.Max(1, (int)Math.Round(height * scale)),
+                96 * scale, 96 * scale, PixelFormats.Pbgra32);
+            bitmap.Render(visual);
+            bitmap.Freeze();
+            return bitmap;
+        }
+
         /// <summary>Draws the shelf to a PNG, for the screenshots that the automated checks keep.</summary>
         public void SaveScreenshot(string path)
         {
             UpdateLayout();
-            DpiScale dpi = VisualTreeHelper.GetDpi(this);
-            int width = (int)Math.Ceiling(_root.ActualWidth * dpi.DpiScaleX);
-            int height = (int)Math.Ceiling(_root.ActualHeight * dpi.DpiScaleY);
-            var bitmap = new RenderTargetBitmap(width, height, 96 * dpi.DpiScaleX, 96 * dpi.DpiScaleY, PixelFormats.Pbgra32);
-            bitmap.Render(_root);
+            BitmapSource bitmap = RenderElement(_root, VisualTreeHelper.GetDpi(this).DpiScaleX);
             var encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(bitmap));
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);

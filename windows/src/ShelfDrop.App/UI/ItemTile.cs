@@ -15,6 +15,7 @@ namespace ShelfDrop.App.UI
     {
         private readonly Grid _thumbnailArea;
         private readonly Image _image = new Image();
+        private readonly TextBlock _title;
         private readonly TextBlock _detail;
         private readonly CircleButton _share;
         private readonly CircleButton _remove;
@@ -68,9 +69,12 @@ namespace ShelfDrop.App.UI
                 _thumbnailArea.Children.Add(GlyphTile(item.Kind));
             }
 
-            TextBlock title = Ui.Label(item.Title, 11, Theme.Keys.Text, FontWeights.Medium);
-            title.TextAlignment = TextAlignment.Center;
-            title.Margin = new Thickness(0, 6, 0, 0);
+            _title = Ui.Label(item.Title, 11, Theme.Keys.Text, FontWeights.Medium);
+            _title.TextAlignment = TextAlignment.Center;
+            _title.Margin = new Thickness(0, 6, 0, 0);
+            // A long name is cut in the middle, not at the end, so that what kind of file it is can still be read.
+            _title.TextTrimming = TextTrimming.None;
+            _title.SizeChanged += (sender, args) => FitTitle(args.NewSize.Width);
 
             _detail = Ui.Label(item.Detail(), 10, Theme.Keys.TextSecondary);
             _detail.TextAlignment = TextAlignment.Center;
@@ -78,7 +82,7 @@ namespace ShelfDrop.App.UI
 
             var column = new StackPanel();
             column.Children.Add(_thumbnailArea);
-            column.Children.Add(title);
+            column.Children.Add(_title);
             column.Children.Add(_detail);
 
             _share = new CircleButton(Glyphs.Share, "Share…")
@@ -115,6 +119,7 @@ namespace ShelfDrop.App.UI
         internal HoverButton ShareButton => _share;
         internal HoverButton RemoveButton => _remove;
         internal string DetailText => _detail.Text;
+        internal string TitleText => _title.Text;
         internal bool HasPicture => _image.Source != null;
 
         public event Action<ItemTile>? RemoveRequested;
@@ -193,6 +198,17 @@ namespace ShelfDrop.App.UI
             // Well over the on-screen size (76 x 48), so it stays sharp on a high-DPI screen.
             ImageSource? picture = await ThumbnailService.LoadAsync(path, 256);
             SetThumbnail(picture);
+        }
+
+        private void FitTitle(double room)
+        {
+            if (room <= 0) return;
+            double pixelsPerDip = VisualTreeHelper.GetDpi(this).PixelsPerDip;
+            var typeface = new Typeface(_title.FontFamily, _title.FontStyle, _title.FontWeight, _title.FontStretch);
+            double Measure(string text) =>
+                new FormattedText(text, System.Globalization.CultureInfo.CurrentUICulture, FlowDirection.LeftToRight, typeface, _title.FontSize, Brushes.Black, pixelsPerDip).WidthIncludingTrailingWhitespace;
+
+            _title.Text = TextTrim.Middle(Item.Title, Measure, room);
         }
 
         private void ApplyColors()

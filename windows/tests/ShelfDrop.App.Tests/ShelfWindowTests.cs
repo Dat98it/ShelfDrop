@@ -212,6 +212,64 @@ namespace ShelfDrop.App.Tests
             }
         });
 
+        [Fact]
+        public void ThePanelPictureStartsAtThePanelsOwnEdge() => _wpf.Run(() =>
+        {
+            using (var h = new ShelfHarness())
+            {
+                Theme.Apply(dark: false);
+                h.Window.ShowWithoutActivating(new PixelRect(60, 60, (int)ShelfLimits.DefaultSize.Width, (int)ShelfLimits.DefaultSize.Height));
+                Pump.For(TimeSpan.FromMilliseconds(300));
+
+                BitmapSource picture = h.Window.RenderPanel(2);
+
+                // Halfway down, 3 pixels in from each edge, is panel (nearly opaque). Shifted by the window's margin it would be
+                // empty on the left and the picture would be cut off on the right.
+                Assert.True(AlphaAt(picture, 3, picture.PixelHeight / 2) > 200, "left edge is empty");
+                Assert.True(AlphaAt(picture, picture.PixelWidth - 4, picture.PixelHeight / 2) > 200, "right edge is cut off");
+                Assert.True(AlphaAt(picture, picture.PixelWidth / 2, picture.PixelHeight - 4) > 200, "bottom edge is cut off");
+            }
+        });
+
+        [Fact]
+        public void ALongNameIsCutInTheMiddleSoTheFileTypeStillShows() => _wpf.Run(() =>
+        {
+            using (var h = new ShelfHarness())
+            {
+                string name = "Holiday photos from the long weekend by the lake.png";
+                h.Controller.Model.Add(new[] { ShelfItem.ForFile(h.Scratch.File(name)) });
+                h.Window.ShowWithoutActivating(new PixelRect(60, 60, (int)ShelfLimits.DefaultSize.Width, (int)ShelfLimits.DefaultSize.Height));
+                Pump.For(TimeSpan.FromMilliseconds(600));
+
+                string shown = h.Window.Tiles.Single().TitleText;
+
+                Assert.Contains("…", shown);
+                Assert.EndsWith(".png", shown);
+                Assert.StartsWith("Holiday", shown);
+                Assert.True(shown.Length < name.Length);
+            }
+        });
+
+        [Fact]
+        public void AShortNameIsLeftWhole() => _wpf.Run(() =>
+        {
+            using (var h = new ShelfHarness())
+            {
+                h.Controller.Model.Add(new[] { ShelfItem.ForFile(h.Scratch.File("notes.txt")) });
+                h.Window.ShowWithoutActivating(new PixelRect(60, 60, (int)ShelfLimits.DefaultSize.Width, (int)ShelfLimits.DefaultSize.Height));
+                Pump.For(TimeSpan.FromMilliseconds(400));
+
+                Assert.Equal("notes.txt", h.Window.Tiles.Single().TitleText);
+            }
+        });
+
+        private static int AlphaAt(BitmapSource picture, int x, int y)
+        {
+            var pixel = new byte[4];
+            new FormatConvertedBitmap(new CroppedBitmap(picture, new System.Windows.Int32Rect(x, y, 1, 1)), PixelFormats.Bgra32, null, 0).CopyPixels(pixel, 4, 0);
+            return pixel[3];
+        }
+
         // Pictures. Kept as artifacts of the automated build, where they are the only way to see what the window looks like.
 
         [Fact]

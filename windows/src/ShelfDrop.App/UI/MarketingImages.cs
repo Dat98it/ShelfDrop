@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
+using ShelfDrop.App.Native;
 using ShelfDrop.Core;
 
 namespace ShelfDrop.App.UI
@@ -26,6 +27,9 @@ namespace ShelfDrop.App.UI
         {
             Directory.CreateDirectory(directory);
             Directory.CreateDirectory(Path.Combine(directory, "transparent"));
+
+            // The real pointer would otherwise sit wherever it was left, and make whatever is under it look hovered.
+            NativeMethods.SetCursorPos(NativeMethods.GetSystemMetrics(0) - 1, NativeMethods.GetSystemMetrics(1) - 1);
 
             try
             {
@@ -54,7 +58,7 @@ namespace ShelfDrop.App.UI
             model.Add(DemoContent.CreateForPictures(temp, 6));
             await Settle(window, thumbnails: true);
 
-            Save(directory, dark ? "01-hero-dark.png" : "02-hero-light.png", Compose(window.RenderPanel(2.4), 2.4, CanvasWidth, CanvasHeight, dark, backdrop: true));
+            Save(directory, dark ? "01-hero-dark.png" : "02-hero-light.png", Compose(window.RenderPanel(3), 3, CanvasWidth, CanvasHeight, dark, backdrop: true));
             Save(directory, dark ? "03-closeup-dark.png" : "04-closeup-light.png", Compose(window.RenderPanel(3.6), 3.6, 1800, 1350, dark, backdrop: true));
             Save(Path.Combine(directory, "transparent"), $"panel-items-{theme}.png", Compose(window.RenderPanel(3), 3, (int)((ShelfLimits.DefaultSize.Width + 140) * 3), (int)((ShelfLimits.DefaultSize.Height + 140) * 3), dark, backdrop: false));
 
@@ -62,7 +66,7 @@ namespace ShelfDrop.App.UI
             ItemTile first = window.Tiles[0];
             first.SetHot(true);
             await Settle(window, thumbnails: false);
-            Save(directory, dark ? "05-hover-actions-dark.png" : "06-hover-actions-light.png", Compose(window.RenderPanel(2.4), 2.4, CanvasWidth, CanvasHeight, dark, backdrop: true));
+            Save(directory, dark ? "05-hover-actions-dark.png" : "06-hover-actions-light.png", Compose(window.RenderPanel(3), 3, CanvasWidth, CanvasHeight, dark, backdrop: true));
             first.SetHot(false);
 
             // A drag is over the shelf while it already holds things: the whole panel takes the accent colour.
@@ -75,18 +79,18 @@ namespace ShelfDrop.App.UI
             model.Clear();
             model.IsDropTargeted = true;
             await Settle(window, thumbnails: false);
-            Save(directory, dark ? "07-release-to-add-dark.png" : "08-release-to-add-light.png", Compose(window.RenderPanel(2.4), 2.4, CanvasWidth, CanvasHeight, dark, backdrop: true));
+            Save(directory, dark ? "07-release-to-add-dark.png" : "08-release-to-add-light.png", Compose(window.RenderPanel(3), 3, CanvasWidth, CanvasHeight, dark, backdrop: true));
 
             // Nothing on the shelf at rest.
             model.IsDropTargeted = false;
             await Settle(window, thumbnails: false);
-            Save(directory, dark ? "09-empty-state-dark.png" : "10-empty-state-light.png", Compose(window.RenderPanel(2.4), 2.4, CanvasWidth, CanvasHeight, dark, backdrop: true));
+            Save(directory, dark ? "09-empty-state-dark.png" : "10-empty-state-light.png", Compose(window.RenderPanel(3), 3, CanvasWidth, CanvasHeight, dark, backdrop: true));
 
-            // A wider shelf, with nine things on it.
-            await Show(window, new SizeDips(560, 420), dpi);
-            model.Add(DemoContent.CreateForPictures(temp, 9));
+            // A wider shelf, with ten things on it: two full rows.
+            await Show(window, new SizeDips(560, 324), dpi);
+            model.Add(DemoContent.CreateForPictures(temp, 10));
             await Settle(window, thumbnails: true);
-            Save(directory, dark ? "11-wide-dark.png" : "12-wide-light.png", Compose(window.RenderPanel(2), 2, CanvasWidth, CanvasHeight, dark, backdrop: true));
+            Save(directory, dark ? "11-wide-dark.png" : "12-wide-light.png", Compose(window.RenderPanel(2.4), 2.4, CanvasWidth, CanvasHeight, dark, backdrop: true));
 
             model.Clear();
         }
