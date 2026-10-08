@@ -24,6 +24,7 @@ namespace ShelfDrop.App.UI
     internal sealed class ShelfWindow : Window, IShelfWindow
     {
         private readonly DragOutService _dragOut;
+        private readonly Border _shadow;
         private readonly Border _panel;
         private readonly Border _highlight;
         private readonly TextBlock _subtitle;
@@ -64,8 +65,8 @@ namespace ShelfDrop.App.UI
 
             // The shadow is cast by a plain rounded rectangle behind the panel, so the soft-edge effect is not
             // applied to everything on the shelf each time something changes.
-            var shadow = new Border { CornerRadius = new CornerRadius(20), Effect = new DropShadowEffect { BlurRadius = 20, ShadowDepth = 3, Direction = 270, Opacity = 0.4 } };
-            shadow.SetResourceReference(Border.BackgroundProperty, Theme.Keys.Panel);
+            _shadow = new Border { CornerRadius = new CornerRadius(20), Effect = new DropShadowEffect { BlurRadius = 20, ShadowDepth = 3, Direction = 270, Opacity = 0.4 } };
+            _shadow.SetResourceReference(Border.BackgroundProperty, Theme.Keys.Panel);
 
             _panel = new Border { CornerRadius = new CornerRadius(20), BorderThickness = new Thickness(1) };
             _panel.SetResourceReference(Border.BackgroundProperty, Theme.Keys.Panel);
@@ -149,7 +150,7 @@ namespace ShelfDrop.App.UI
             _grip.MouseLeftButtonUp += OnGripUp;
 
             _root = new Grid { Margin = new Thickness(ShelfLimits.ShadowMargin) };
-            _root.Children.Add(shadow);
+            _root.Children.Add(_shadow);
             _root.Children.Add(_panel);
             _root.Children.Add(_highlight);
             _root.Children.Add(_grip);
@@ -224,6 +225,29 @@ namespace ShelfDrop.App.UI
             Show();
             UpdateLayout();
             Hide();
+        }
+
+        /// <summary>
+        /// The panel as a picture, without the window's own shadow, drawn at <paramref name="scale"/> times its size (vector shapes
+        /// and text are drawn again at the larger size, not stretched). For pictures that put the panel on a backdrop of their own.
+        /// </summary>
+        internal BitmapSource RenderPanel(double scale)
+        {
+            _shadow.Visibility = Visibility.Hidden;
+            try
+            {
+                UpdateLayout();
+                int width = (int)Math.Round(_root.ActualWidth * scale);
+                int height = (int)Math.Round(_root.ActualHeight * scale);
+                var bitmap = new RenderTargetBitmap(width, height, 96 * scale, 96 * scale, PixelFormats.Pbgra32);
+                bitmap.Render(_root);
+                bitmap.Freeze();
+                return bitmap;
+            }
+            finally
+            {
+                _shadow.Visibility = Visibility.Visible;
+            }
         }
 
         /// <summary>Draws the shelf to a PNG, for the screenshots that the automated checks keep.</summary>

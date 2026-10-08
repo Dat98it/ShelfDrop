@@ -34,6 +34,7 @@ namespace ShelfDrop.App.Native
 
         // Shell thumbnails
         public const uint SIIGBF_BIGGERSIZEOK = 0x1;
+        public const uint SIIGBF_THUMBNAILONLY = 0x8;
 
         public delegate IntPtr HookProc(int nCode, IntPtr wParam, IntPtr lParam);
 

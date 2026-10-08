@@ -45,20 +45,52 @@ namespace ShelfDrop.App.Services
             return completion.Task;
         }
 
+        // What WPF can open by itself. HEIC and the like need a codec that not every machine has, so those are left to the shell.
+        private static readonly string[] PictureExtensions = { ".png", ".jpg", ".jpeg", ".jpe", ".jfif", ".gif", ".bmp", ".tif", ".tiff", ".ico" };
+
         private static ImageSource? Load(string path, int pixels)
         {
-            ImageSource? fromShell = FromShell(path, pixels);
-            return fromShell ?? FromAssociatedIcon(path);
+            // In order of preference: the shell's real thumbnail (it knows about photo orientation and video frames),
+            // the picture itself where the shell has no thumbnail to give (a stripped-down Windows, a thumbnail cache turned off),
+            // and last the file's icon.
+            return FromShell(path, pixels, NativeMethods.SIIGBF_THUMBNAILONLY)
+                ?? FromPictureFile(path, pixels)
+                ?? FromShell(path, pixels, NativeMethods.SIIGBF_BIGGERSIZEOK)
+                ?? FromAssociatedIcon(path);
         }
 
-        private static ImageSource? FromShell(string path, int pixels)
+        /// <summary>Opens a picture file directly, decoded down to the size wanted so a huge photo does not fill the memory.</summary>
+        internal static ImageSource? FromPictureFile(string path, int pixels)
+        {
+            if (Array.IndexOf(PictureExtensions, Path.GetExtension(path).ToLowerInvariant()) < 0) return null;
+            try
+            {
+                int naturalWidth = BitmapFrame.Create(new Uri(path), BitmapCreateOptions.DelayCreation, BitmapCacheOption.None).PixelWidth;
+
+                var image = new BitmapImage();
+                image.BeginInit();
+                image.UriSource = new Uri(path);
+                image.CacheOption = BitmapCacheOption.OnLoad;   // read it now, so the file is not left open
+                if (naturalWidth > pixels) image.DecodePixelWidth = pixels;
+                image.EndInit();
+                image.Freeze();
+                return image;
+            }
+            catch (Exception e) when (!(e is OutOfMemoryException))
+            {
+                // A file that is not really a picture, or is damaged or unreadable: fall through to its icon.
+                return null;
+            }
+        }
+
+        private static ImageSource? FromShell(string path, int pixels, uint flags)
         {
             Guid iid = NativeMethods.IID_IShellItemImageFactory;
             NativeMethods.IShellItemImageFactory? factory = null;
             try
             {
                 NativeMethods.SHCreateItemFromParsingName(path, IntPtr.Zero, ref iid, out factory);
-                int hr = factory.GetImage(new NativeMethods.SIZE { cx = pixels, cy = pixels }, NativeMethods.SIIGBF_BIGGERSIZEOK, out IntPtr bitmap);
+                int hr = factory.GetImage(new NativeMethods.SIZE { cx = pixels, cy = pixels }, flags, out IntPtr bitmap);
                 if (hr != 0 || bitmap == IntPtr.Zero) return null;
                 try
                 {

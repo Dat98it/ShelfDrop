@@ -5,7 +5,7 @@
 //   output.icns  default: Resources/AppIcon.icns
 //   preview.png  optional: also write the 1024x1024 master, for looking at the design
 //
-//        swift Scripts/make_icon.swift --windows [output.ico]
+//        swift Scripts/make_icon.swift --windows [output.ico] [preview.png]
 //   Same artwork for the Windows app, drawn larger in its canvas (Windows icons have no
 //   built-in margin) and packed as a multi-size .ico. default: windows/src/ShelfDrop.App/Assets/ShelfDrop.ico
 //
@@ -265,6 +265,8 @@ let arguments = CommandLine.arguments
 if arguments.count > 1, arguments[1] == "--windows" {
     _ = NSApplication.shared
     try writeWindowsIcon(to: arguments.count > 2 ? arguments[2] : "windows/src/ShelfDrop.App/Assets/ShelfDrop.ico")
+    // Optionally also the large master, for marketing.
+    if arguments.count > 3 { try render(pixels: 1024, zoom: 1.12).write(to: URL(fileURLWithPath: arguments[3])) }
     exit(0)
 }
 let output = arguments.count > 1 ? arguments[1] : "Resources/AppIcon.icns"

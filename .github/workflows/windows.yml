@@ -82,6 +82,17 @@ jobs:
         if: ${{ !cancelled() && steps.publish.outcome == 'success' }}
         run: ./scripts/smoke-test.ps1 -Exe publish\ShelfDrop.exe -Artifacts "${{ github.workspace }}\artifacts\smoke"
 
+      - name: Draw the pictures for marketing
+        if: ${{ !cancelled() && steps.publish.outcome == 'success' }}
+        run: |
+          Get-Process -Name ShelfDrop -ErrorAction SilentlyContinue | Stop-Process -Force
+          $folder = "${{ github.workspace }}\artifacts\marketing"
+          $process = Start-Process -FilePath publish\ShelfDrop.exe -ArgumentList '--marketing', "`"$folder`"" -PassThru
+          if (-not $process.WaitForExit(300000)) { $process.Kill(); throw 'drawing the pictures took more than five minutes' }
+          if ($process.ExitCode -ne 0) { throw "drawing the pictures failed with exit code $($process.ExitCode)" }
+          Get-ChildItem $folder -Recurse -Filter *.png | ForEach-Object { "{0,-45} {1,10:N0} bytes" -f $_.FullName.Substring($folder.Length + 1), $_.Length }
+          Copy-Item "$env:LOCALAPPDATA\ShelfDrop\shelfdrop.log" "${{ github.workspace }}\artifacts\marketing\marketing.log" -ErrorAction SilentlyContinue
+
       - name: Install Inno Setup
         id: inno
         if: ${{ !cancelled() && steps.publish.outcome == 'success' }}

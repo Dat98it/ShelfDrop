@@ -208,6 +208,50 @@ namespace ShelfDrop.App.Tests
         }
 
         [Fact]
+        public void APictureIsReadFromItsFileWhereTheShellHasNoThumbnail()
+        {
+            using (var scratch = new TempDir())
+            {
+                string photo = _wpf.Run(() => DemoContent.Create(new TempStorage(Path.Combine(scratch.Path, "ShelfDrop"))).First(i => i.IsImageFile).Path!);
+
+                ImageSource? picture = ThumbnailService.FromPictureFile(photo, 256);
+
+                var bitmap = Assert.IsAssignableFrom<BitmapSource>(picture);
+                Assert.Equal(256, bitmap.PixelWidth);   // the photo is bigger, so it is decoded down to what was asked for
+                Assert.True(bitmap.IsFrozen);
+            }
+        }
+
+        [Fact]
+        public void ASmallPictureIsNotBlownUp()
+        {
+            using (var scratch = new TempDir())
+            {
+                string path = Path.Combine(scratch.Path, "tiny.png");
+                _wpf.Run(() =>
+                {
+                    var bitmap = new RenderTargetBitmap(32, 32, 96, 96, PixelFormats.Pbgra32);
+                    var encoder = new PngBitmapEncoder();
+                    encoder.Frames.Add(BitmapFrame.Create(bitmap));
+                    using (FileStream stream = File.Create(path)) encoder.Save(stream);
+                });
+
+                Assert.Equal(32, ((BitmapSource)ThumbnailService.FromPictureFile(path, 256)!).PixelWidth);
+            }
+        }
+
+        [Fact]
+        public void OnlyRealPicturesAreReadAsPictures()
+        {
+            using (var scratch = new TempDir())
+            {
+                Assert.Null(ThumbnailService.FromPictureFile(scratch.File("report.pdf"), 256));
+                Assert.Null(ThumbnailService.FromPictureFile(scratch.File("not really.png", "this is text, not a picture"), 256));
+                Assert.Null(ThumbnailService.FromPictureFile(Path.Combine(scratch.Path, "missing.png"), 256));
+            }
+        }
+
+        [Fact]
         public async Task AFileThatIsNotThereGetsNothingAndNoException()
         {
             string path = Path.Combine(Path.GetTempPath(), "ShelfDrop-missing-" + Guid.NewGuid() + ".png");

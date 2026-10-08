@@ -194,6 +194,24 @@ namespace ShelfDrop.App.Tests
             }
         });
 
+        [Fact]
+        public void ThePanelCanBeDrawnAtAnySize() => _wpf.Run(() =>
+        {
+            using (var h = new ShelfHarness())
+            {
+                h.Window.ShowWithoutActivating(new PixelRect(60, 60, (int)ShelfLimits.DefaultSize.Width, (int)ShelfLimits.DefaultSize.Height));
+                Pump.For(TimeSpan.FromMilliseconds(300));
+
+                BitmapSource once = h.Window.RenderPanel(1);
+                BitmapSource triple = h.Window.RenderPanel(3);
+
+                Assert.Equal(360, once.PixelWidth);
+                Assert.Equal(300, once.PixelHeight);
+                Assert.Equal(1080, triple.PixelWidth);
+                Assert.Equal(900, triple.PixelHeight);
+            }
+        });
+
         // Pictures. Kept as artifacts of the automated build, where they are the only way to see what the window looks like.
 
         [Fact]

@@ -69,21 +69,21 @@ namespace ShelfDrop.App
                 ClearShelf = () => _controller.Clear(),
                 ToggleLaunchAtLogin = ToggleLaunchAtLogin,
                 Uninstall = UninstallApp,
-                Quit = Quit,
+                Quit = () => Quit(),
                 LaunchAtLoginState = () => _launchAtLogin.MenuState,
                 UninstallState = () => _uninstaller.Availability,
             });
 
             StartListeningForDrags();
             HandleArguments();
-            if (!HasArgument("--demo") && !HasArgument("--show-shelf")) _window.Prewarm();
+            if (!HasArgument("--demo") && !HasArgument("--show-shelf") && !HasArgument("--marketing")) _window.Prewarm();
         }
 
-        public void Quit()
+        public void Quit(int exitCode = 0)
         {
             Log.Info("quitting");
             Dispose();
-            _application.Shutdown();
+            _application.Shutdown(exitCode);
         }
 
         public void Dispose()
@@ -190,6 +190,22 @@ namespace ShelfDrop.App
 
         // Command line, used for pictures and checks
 
+        private async void RenderMarketingImages(string directory)
+        {
+            int exitCode = 0;
+            try
+            {
+                await MarketingImages.RenderAsync(_window!, _controller!, _temp, directory);
+                Log.Info("marketing pictures written to " + directory);
+            }
+            catch (Exception e)
+            {
+                Log.Error("could not draw the marketing pictures", e);
+                exitCode = 1;
+            }
+            Quit(exitCode);
+        }
+
         private bool HasArgument(string name) => _arguments.Contains(name, StringComparer.OrdinalIgnoreCase);
 
         private void HandleArguments()
@@ -205,6 +221,9 @@ namespace ShelfDrop.App
                     : new PixelPoint(primary.WorkArea.Left + primary.WorkArea.Width / 2, primary.WorkArea.Top + primary.WorkArea.Height / 2);
                 _controller!.Show(centre);
             }
+
+            int marketing = Array.FindIndex(_arguments, a => string.Equals(a, "--marketing", StringComparison.OrdinalIgnoreCase));
+            if (marketing >= 0 && marketing + 1 < _arguments.Length) RenderMarketingImages(_arguments[marketing + 1]);
 
             int index = Array.FindIndex(_arguments, a => string.Equals(a, "--screenshot", StringComparison.OrdinalIgnoreCase));
             if (index >= 0 && index + 1 < _arguments.Length)

@@ -136,20 +136,23 @@ namespace ShelfDrop.App.UI
         protected override void OnMouseEnter(MouseEventArgs e)
         {
             base.OnMouseEnter(e);
-            _isHot = true;
-            _share.Visibility = Visibility.Visible;
-            _remove.Visibility = Visibility.Visible;
-            Refresh();
-            ApplyColors();
+            SetHot(true);
         }
 
         protected override void OnMouseLeave(MouseEventArgs e)
         {
             base.OnMouseLeave(e);
-            _isHot = false;
             _isPressed = false;
-            _share.Visibility = Visibility.Hidden;
-            _remove.Visibility = Visibility.Hidden;
+            SetHot(false);
+        }
+
+        /// <summary>The look of a tile under the pointer: lighter card, share and remove buttons. Public so a picture can show it without a mouse.</summary>
+        internal void SetHot(bool hot)
+        {
+            _isHot = hot;
+            _share.Visibility = hot ? Visibility.Visible : Visibility.Hidden;
+            _remove.Visibility = hot ? Visibility.Visible : Visibility.Hidden;
+            if (hot) Refresh();
             ApplyColors();
         }
 
@@ -187,8 +190,8 @@ namespace ShelfDrop.App.UI
 
         private async Task LoadThumbnailAsync(string path)
         {
-            // Twice the on-screen size, so it stays sharp on a high-DPI screen.
-            ImageSource? picture = await ThumbnailService.LoadAsync(path, 128);
+            // Well over the on-screen size (76 x 48), so it stays sharp on a high-DPI screen.
+            ImageSource? picture = await ThumbnailService.LoadAsync(path, 256);
             SetThumbnail(picture);
         }
 

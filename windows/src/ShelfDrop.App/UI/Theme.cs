@@ -36,6 +36,9 @@ namespace ShelfDrop.App.UI
 
         public static bool IsDark { get; private set; }
 
+        /// <summary>Set to show one theme whatever Windows is set to (the pictures for marketing). Null follows Windows.</summary>
+        public static bool? Forced { get; set; }
+
         /// <summary>Raised after the colours changed, for the few things (custom drawing) that cannot follow a resource by themselves.</summary>
         public static event Action? Changed;
 
@@ -53,7 +56,7 @@ namespace ShelfDrop.App.UI
             }
         }
 
-        public static void Apply() => Apply(SystemUsesDarkApps());
+        public static void Apply() => Apply(Forced ?? SystemUsesDarkApps());
 
         public static void Apply(bool dark)
         {
