@@ -6,7 +6,7 @@ Có hai bản riêng, dùng giống nhau:
 
 | | macOS | Windows |
 |---|---|---|
-| Tải về | [Bản mới nhất (.dmg)](https://github.com/Dat98it/ShelfDrop/releases/latest) | Trang [Releases](https://github.com/Dat98it/ShelfDrop/releases), tag `win-v…` (chưa có bản nào) |
+| Tải về | [Bản mới nhất (.dmg)](https://github.com/Dat98it/ShelfDrop/releases/latest) | [ShelfDrop-Setup-0.1.0.exe](https://github.com/Dat98it/ShelfDrop/releases/download/win-v0.1.0/ShelfDrop-Setup-0.1.0.exe) (70 MB) |
 | Yêu cầu | macOS 14 trở lên | Windows 10 (1809) trở lên, 64-bit |
 | Viết bằng | Swift, AppKit + SwiftUI | C#, .NET 8, WPF |
 | Chi tiết | [phần macOS](#macos) | [phần Windows](#windows) |
@@ -44,7 +44,7 @@ Có hai bản riêng, dùng giống nhau:
 ## Tình trạng
 
 - macOS: dùng được, đã có các bản phát hành ([danh sách](https://github.com/Dat98it/ShelfDrop/releases)).
-- Windows: chưa có bản phát hành. Mã đã được build và chạy thử tự động trên một máy Windows của GitHub (lắc mở kệ, kéo thả vào và ra, nhớ vị trí và cỡ, trình cài đặt). Chưa ai thử trên máy Windows thật. Chỗ nào đã kiểm, chỗ nào chưa, xem ở [Đã kiểm chứng đến đâu](#đã-kiểm-chứng-đến-đâu).
+- Windows: đã có bản 0.1.0 ([ghi chú phát hành](https://github.com/Dat98it/ShelfDrop/releases/tag/win-v0.1.0)). Mã được build và chạy thử tự động trên một máy Windows của GitHub (lắc mở kệ, kéo thả vào và ra, nhớ vị trí và cỡ, trình cài đặt), nhưng chưa ai thử trên máy Windows thật. Chỗ nào đã kiểm, chỗ nào chưa, xem ở [Đã kiểm chứng đến đâu](#đã-kiểm-chứng-đến-đâu).
 
 ## macOS
 
@@ -288,9 +288,13 @@ Mã nguồn ở `windows/`, viết bằng C# / .NET 8 / WPF. Cách dùng giống
 
 ### Cài đặt
 
-Tải `ShelfDrop-Setup-<phiên bản>.exe` ở trang [Releases](https://github.com/Dat98it/ShelfDrop/releases) (bản Windows có tag `win-v…`) rồi chạy. Hiện chưa có bản phát hành nào. Cài đặt không cần quyền quản trị: chương trình vào `%LocalAppData%\Programs\ShelfDrop`, hiện trong Settings → Apps và gỡ ở đó như mọi ứng dụng khác.
+[Tải ShelfDrop-Setup-0.1.0.exe](https://github.com/Dat98it/ShelfDrop/releases/download/win-v0.1.0/ShelfDrop-Setup-0.1.0.exe) (khoảng 70 MB) rồi chạy. Không cần quyền quản trị, và không cần cài .NET vì chương trình đã gói sẵn.
 
-Lần chạy đầu, SmartScreen có thể chặn ("Windows protected your PC") vì file chưa ký số. Chọn More info → Run anyway. Xem thêm ở [Giới hạn đã biết](#giới-hạn-đã-biết).
+1. Windows có thể hiện "Windows protected your PC" vì file chưa ký số. Chọn More info, rồi Run anyway. Xem thêm ở [Giới hạn đã biết](#giới-hạn-đã-biết).
+2. Làm theo trình cài đặt. Chương trình vào `%LocalAppData%\Programs\ShelfDrop`, hiện trong Settings → Apps và gỡ ở đó như mọi ứng dụng khác. Ô "Start ShelfDrop when I sign in to Windows" mặc định tắt.
+3. Icon ShelfDrop nằm ở khay hệ thống (nếu không thấy, bấm mũi tên ^ cạnh đồng hồ). Nhấp vào icon để mở kệ, hoặc kéo thử một file rồi lắc chuột.
+
+Muốn kiểm tra file tải về, SHA-256 nằm trong [ghi chú phát hành](https://github.com/Dat98it/ShelfDrop/releases/tag/win-v0.1.0). Trong PowerShell: `Get-FileHash .\ShelfDrop-Setup-0.1.0.exe -Algorithm SHA256`. Các bản Windows khác (nếu có) nằm ở trang [Releases](https://github.com/Dat98it/ShelfDrop/releases), tag `win-v…`.
 
 ### Cách hoạt động (Windows)
 

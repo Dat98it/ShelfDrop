@@ -79,7 +79,13 @@ C# / .NET 8 / WPF, cùng repo. Xem [phần Windows trong README.md](README.md#wi
 - **Hook chuột phải trả về nhanh**: chỉ nuôi `DragTracker`; việc nặng (mở cửa sổ) chạy sau qua `Dispatcher.BeginInvoke`, nếu không Windows sẽ gỡ hook.
 - **Test cần Windows không được chạm vào máy người chạy**: registry thử dùng khóa riêng `Software\ShelfDropTests\<guid>`, test dùng chuột giả lập chỉ chạy khi `SHELFDROP_INTERACTIVE_TESTS=1` (CI đặt biến này).
 - Icon Windows: chạy `swift Scripts/make_icon.swift --windows` **trong `macos/`** (ghi `windows/src/ShelfDrop.App/Assets/ShelfDrop.ico`). Script nằm ở `macos/` vì nó vẽ bằng AppKit, chỉ chạy được trên Mac.
-- Phát hành bản Windows dùng tag riêng `win-vX.Y.Z` để không đụng tới các bản macOS `vX.Y.Z`. Trình cài đặt chỉ tạo được trên CI: tải artifact `ShelfDrop-Setup` của lần chạy tương ứng bằng `gh run download`, tính SHA-256, rồi `gh release create win-vX.Y.Z` (không dùng `--latest`, để `/releases/latest` vẫn trỏ về bản macOS).
+- **Phát hành bản Windows** (đã làm thật với `win-v0.1.0`). Tag riêng `win-vX.Y.Z` để không đụng tới các bản macOS `vX.Y.Z`, và `--latest=false` để `/releases/latest` vẫn là bản macOS. Chỉ làm khi được yêu cầu và đã biết số phiên bản.
+  1. Số phiên bản nằm ở `<Version>` trong `windows/Directory.Build.props` (tên file installer lấy từ đó). Sửa, commit, push.
+  2. Đợi CI xanh **trên đúng commit sẽ gắn tag**. Trình cài đặt chỉ tạo được trên CI. Đưa `main` tới commit đó bằng fast-forward nếu đang ở nhánh khác (`git push origin <nhánh>:main`).
+  3. `gh run download <run> -n ShelfDrop-Setup -D <thư mục mới>`, so SHA-256 với file `.sha256` do CI ghi.
+  4. Viết ghi chú bằng tiếng Việt (cài đặt, SmartScreen, cái đã/chưa kiểm chứng, SHA-256, commit và lượt CI), rồi `gh release create win-vX.Y.Z <exe> <sha256> --target <sha đầy đủ> --latest=false --notes-file ...`.
+  5. Kiểm lại: tag trỏ đúng commit, `/releases/latest` vẫn là bản macOS, `digest` của file đính kèm khớp, tải bằng URL công khai (`curl -L`, không token) ra đúng SHA-256.
+  6. Sửa link tải trong `README.md` (bảng đầu trang, mục Cài đặt của phần Windows, mục Tình trạng): link trỏ thẳng tới file của một phiên bản cụ thể nên phải đổi tay mỗi lần ra bản mới.
 
 ## Khi chạy lệnh trên máy này
 
