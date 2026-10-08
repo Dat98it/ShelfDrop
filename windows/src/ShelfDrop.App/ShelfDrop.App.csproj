@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <!-- 10.0.19041 brings the Windows Runtime projections that the share sheet needs. -->
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <SupportedOSPlatformVersion>10.0.17763.0</SupportedOSPlatformVersion>
+    <!-- Written out instead of UseWPF: the SDK that adds XAML compilation only exists on Windows, so with it the
+         project could not even be compiled on a Mac. The window is built in C# for the same reason, which
+         means that the compiler checks every control and property here before the code ever reaches Windows. -->
+    <UseWPF>false</UseWPF>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>ShelfDrop.App</RootNamespace>
+    <AssemblyName>ShelfDrop</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\ShelfDrop.ico</ApplicationIcon>
+    <Description>A shelf for files you are moving around: shake the mouse while dragging and drop things on it.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- WPF for the window; WinForms only for NotifyIcon, the icon in the system tray. -->
+    <FrameworkReference Include="Microsoft.WindowsDesktop.App.WPF" />
+    <FrameworkReference Include="Microsoft.WindowsDesktop.App.WindowsForms" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ShelfDrop.Core\ShelfDrop.Core.csproj" />
+    <EmbeddedResource Include="Assets\ShelfDrop.ico" LogicalName="ShelfDrop.ico" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ShelfDrop.App.Tests" />
+  </ItemGroup>
+
+</Project>
