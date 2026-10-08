@@ -1,13 +1,15 @@
 #!/usr/bin/env swift
 // Draws the ShelfDrop app icon and packs it into an .icns file (no design tool or Xcode needed).
 //
+// Run from the macos/ folder.
+//
 // Usage: swift Scripts/make_icon.swift [output.icns] [preview.png]
 //   output.icns  default: Resources/AppIcon.icns
 //   preview.png  optional: also write the 1024x1024 master, for looking at the design
 //
 //        swift Scripts/make_icon.swift --windows [output.ico] [preview.png]
 //   Same artwork for the Windows app, drawn larger in its canvas (Windows icons have no
-//   built-in margin) and packed as a multi-size .ico. default: windows/src/ShelfDrop.App/Assets/ShelfDrop.ico
+//   built-in margin) and packed as a multi-size .ico. default: ../windows/src/ShelfDrop.App/Assets/ShelfDrop.ico
 //
 // The icon is drawn in a 1024-unit design space (Apple's macOS icon grid: an 824-unit body
 // centred in the canvas, leaving room for the shadow) and re-rendered at each size, so small
@@ -264,7 +266,7 @@ func writeWindowsIcon(to path: String) throws {
 let arguments = CommandLine.arguments
 if arguments.count > 1, arguments[1] == "--windows" {
     _ = NSApplication.shared
-    try writeWindowsIcon(to: arguments.count > 2 ? arguments[2] : "windows/src/ShelfDrop.App/Assets/ShelfDrop.ico")
+    try writeWindowsIcon(to: arguments.count > 2 ? arguments[2] : "../windows/src/ShelfDrop.App/Assets/ShelfDrop.ico")
     // Optionally also the large master, for marketing.
     if arguments.count > 3 { try render(pixels: 1024, zoom: 1.12).write(to: URL(fileURLWithPath: arguments[3])) }
     exit(0)
