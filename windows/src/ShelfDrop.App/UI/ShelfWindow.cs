@@ -237,7 +237,7 @@ namespace ShelfDrop.App.UI
             try
             {
                 UpdateLayout();
-                return RenderElement(_root, scale);
+                return RenderRoot(scale);
             }
             finally
             {
@@ -246,38 +246,48 @@ namespace ShelfDrop.App.UI
         }
 
         /// <summary>
-        /// An element as a picture, starting at its own top-left corner. Rendering the element directly would draw it where its parent
-        /// puts it, shifted by its margin and cut off at the far edges; drawing it through a brush with an absolute view box does not.
+        /// The shelf's content as a picture, from its own top-left corner. Drawn where it normally sits it would come out shifted by
+        /// the room left for the shadow and cut off at the far edges, so it is moved to the corner for the moment it takes.
         /// </summary>
-        private static RenderTargetBitmap RenderElement(FrameworkElement element, double scale)
+        private RenderTargetBitmap RenderRoot(double scale)
         {
-            double width = element.ActualWidth;
-            double height = element.ActualHeight;
-            var visual = new DrawingVisual();
-            using (DrawingContext context = visual.RenderOpen())
-            {
-                var brush = new VisualBrush(element)
-                {
-                    ViewboxUnits = BrushMappingMode.Absolute,
-                    Viewbox = new Rect(0, 0, width, height),
-                    Stretch = Stretch.Fill,
-                };
-                context.DrawRectangle(brush, null, new Rect(0, 0, width, height));
-            }
+            double width = _root.ActualWidth;
+            double height = _root.ActualHeight;
+            Thickness margin = _root.Margin;
+            HorizontalAlignment horizontal = _root.HorizontalAlignment;
+            VerticalAlignment vertical = _root.VerticalAlignment;
 
-            var bitmap = new RenderTargetBitmap(
-                Math.Max(1, (int)Math.Round(width * scale)), Math.Max(1, (int)Math.Round(height * scale)),
-                96 * scale, 96 * scale, PixelFormats.Pbgra32);
-            bitmap.Render(visual);
-            bitmap.Freeze();
-            return bitmap;
+            _root.Margin = new Thickness(0);
+            _root.HorizontalAlignment = HorizontalAlignment.Left;
+            _root.VerticalAlignment = VerticalAlignment.Top;
+            _root.Width = width;
+            _root.Height = height;
+            try
+            {
+                UpdateLayout();
+                var bitmap = new RenderTargetBitmap(
+                    Math.Max(1, (int)Math.Round(width * scale)), Math.Max(1, (int)Math.Round(height * scale)),
+                    96 * scale, 96 * scale, PixelFormats.Pbgra32);
+                bitmap.Render(_root);
+                bitmap.Freeze();
+                return bitmap;
+            }
+            finally
+            {
+                _root.Margin = margin;
+                _root.HorizontalAlignment = horizontal;
+                _root.VerticalAlignment = vertical;
+                _root.Width = double.NaN;
+                _root.Height = double.NaN;
+                UpdateLayout();
+            }
         }
 
         /// <summary>Draws the shelf to a PNG, for the screenshots that the automated checks keep.</summary>
         public void SaveScreenshot(string path)
         {
             UpdateLayout();
-            BitmapSource bitmap = RenderElement(_root, VisualTreeHelper.GetDpi(this).DpiScaleX);
+            BitmapSource bitmap = RenderRoot(VisualTreeHelper.GetDpi(this).DpiScaleX);
             var encoder = new PngBitmapEncoder();
             encoder.Frames.Add(BitmapFrame.Create(bitmap));
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
