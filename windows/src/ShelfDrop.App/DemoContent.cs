@@ -67,7 +67,7 @@ namespace ShelfDrop.App
             ShelfItem link = ShelfItem.ForLink(new Uri("https://github.com/Dat98it/ShelfDrop"));
             ShelfItem pdf = ShelfItem.ForFile(report);
             ShelfItem projectFolder = ShelfItem.ForFile(assets);
-            ShelfItem note = ShelfItem.ForText("Call Minh at 3pm");
+            ShelfItem note = ShelfItem.ForText("Ideas for v2");
             ShelfItem trail = ShelfItem.ForFile(mountains);
 
             if (count <= 6) return new[] { photo, link, pdf, projectFolder, note, trail };
