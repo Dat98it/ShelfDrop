@@ -64,8 +64,9 @@ Check 'the settings folder is created by the app and removed by the uninstaller'
     New-Item -ItemType Directory -Force -Path $settingsFolder | Out-Null
     Set-Content -Path (Join-Path $settingsFolder 'settings.json') -Value '{"shelfWidth": 400}'
 
-    $code = Start-Process -FilePath (Join-Path $target 'unins000.exe') -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -PassThru -Wait | Select-Object -ExpandProperty ExitCode
-    Assert ($code -eq 0) "the uninstaller exited with code $code"
+    # The uninstaller copies itself to a temp folder and carries on from there, so what the first process returns says nothing:
+    # what matters is that everything is gone a moment later.
+    $null = Start-Process -FilePath (Join-Path $target 'unins000.exe') -ArgumentList '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART' -PassThru -Wait
 
     $gone = $false
     foreach ($attempt in 1..30) {
@@ -73,7 +74,9 @@ Check 'the settings folder is created by the app and removed by the uninstaller'
         Start-Sleep -Milliseconds 500
     }
     Assert $gone 'ShelfDrop.exe is still there after uninstalling'
-    Assert (-not (Test-Path $settingsFolder)) 'the settings were left behind'
+    $settingsGone = $false
+    foreach ($attempt in 1..20) { if (-not (Test-Path $settingsFolder)) { $settingsGone = $true; break }; Start-Sleep -Milliseconds 500 }
+    Assert $settingsGone 'the settings were left behind'
     Assert (-not (Test-Path $startMenu)) 'the Start menu shortcut was left behind'
     $uninstallEntries = Get-ChildItem 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall' | Where-Object { $_.PSChildName -like '{6B2D6E52-1D0C-4F2A-9B53-3C1F0A7D8E64}*' }
     Assert ($uninstallEntries.Count -eq 0) 'the Settings -> Apps entry was left behind'

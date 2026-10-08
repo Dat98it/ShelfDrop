@@ -151,14 +151,34 @@ Check 'a new run opens at the remembered place and size' {
 $sourceFile = Join-Path $scratch 'report to share.txt'
 Set-Content -Path $sourceFile -Value 'hello from the smoke test'
 $receivedFile = Join-Path $scratch 'received.txt'
+$selfTestFile = Join-Path $scratch 'selftest-received.txt'
 
 $helper = $null
-Check 'a file dragged in from another program lands on the shelf' {
+Check 'control: injected mouse input can drag a file between two ordinary windows' {
     Stop-ShelfDrop
     $script:helper = Start-Process -FilePath (Get-Process -Id $PID).Path -PassThru -ArgumentList @(
-        '-NoProfile', '-STA', '-File', (Join-Path $PSScriptRoot 'drag-source.ps1'), '-File', "`"$sourceFile`"", '-ReceivedFile', "`"$receivedFile`"")
+        '-NoProfile', '-STA', '-File', (Join-Path $PSScriptRoot 'drag-source.ps1'),
+        '-File', "`"$sourceFile`"", '-ReceivedFile', "`"$receivedFile`"", '-SelfTestFile', "`"$selfTestFile`"")
     $source = Wait-Until { Get-VisibleWindow $script:helper.Id 'ShelfDropSource' } 20
-    Assert ($null -ne $source) 'the stand-in program did not open'
+    $target = Wait-Until { Get-VisibleWindow $script:helper.Id 'ShelfDropTarget' } 20
+    Assert ($null -ne $source -and $null -ne $target) 'the stand-in windows did not open'
+    Start-Sleep -Milliseconds 500
+
+    $fromX = $source.Left + 150; $fromY = $source.Top + 100
+    $toX = $target.Left + 150; $toY = $target.Top + 100
+    [Win]::Press($fromX, $fromY); Start-Sleep -Milliseconds 200
+    Move-Smoothly $fromX $fromY ($fromX + 30) ($fromY + 30) 4 40
+    Move-Smoothly ($fromX + 30) ($fromY + 30) $toX $toY 25 40
+    Start-Sleep -Milliseconds 300
+    [Win]::Release($toX, $toY)
+    $got = Wait-Until { Test-Path $selfTestFile } 5
+    Copy-Item "$receivedFile.log" (Join-Path $Artifacts 'stand-in-windows.log') -ErrorAction SilentlyContinue
+    Assert ([bool]$got) "nothing arrived, so this harness cannot test drag and drop. $(Get-Content "$receivedFile.log" -Raw -ErrorAction SilentlyContinue)"
+}
+
+Check 'a file dragged in from another program lands on the shelf' {
+    $source = Get-VisibleWindow $script:helper.Id 'ShelfDropSource'
+    Assert ($null -ne $source) 'the stand-in program is gone'
 
     $process = Start-Fresh -Arguments @('--show-shelf')
     $shelf = Wait-Until { Shelf $process.Id } 8
@@ -176,7 +196,9 @@ Check 'a file dragged in from another program lands on the shelf' {
     $dropped = Wait-Until { (Read-Log) -match 'dropped: 1 item' } 5
     Start-Sleep -Milliseconds 1500
     Save-Screen (Join-Path $Artifacts 'desktop-after-drop.png')
-    Assert $dropped "the shelf did not report a drop. Log: $(Read-Log)"
+    Copy-Item "$receivedFile.log" (Join-Path $Artifacts 'stand-in-windows.log') -ErrorAction SilentlyContinue
+    Copy-Item $logFile (Join-Path $Artifacts 'drop-test.log') -ErrorAction SilentlyContinue
+    Assert ([bool]$dropped) "the shelf did not report a drop. App log: $(Read-Log)"
     Assert ((Read-Log) -notmatch 'ERROR') "errors in the log: $(Read-Log)"
 }
 
