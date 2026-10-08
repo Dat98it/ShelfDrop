@@ -59,6 +59,20 @@ Chỉ phát hành khi được yêu cầu, và chỉ khi đã được cho biế
 
 App chỉ ký ad-hoc, chưa notarize. Bản tải về mang cờ cách ly nên lần mở đầu macOS hiện hộp thoại chặn; **nút "Move to Trash" trên hộp thoại đó đã từng xóa mất bản đã cài**. Hướng dẫn người dùng bấm **Done** rồi **Open Anyway** trong System Settings → Privacy & Security, hoặc `xattr -dr com.apple.quarantine /Applications/ShelfDrop.app`. Chỉ bỏ cờ cách ly khi người dùng đồng ý rõ ràng.
 
+## Bản Windows (`windows/`)
+
+C# / .NET 8 / WPF, cùng repo. Xem [windows/README.md](windows/README.md) cho cách hoạt động; ở đây chỉ ghi điều dễ làm sai:
+
+- **Máy này không có Windows.** Chỉ có thể: build mọi dự án và chạy test của `ShelfDrop.Core.Tests` (260+ test) tại chỗ, còn lại (test lớp Windows, chạy thử chương trình, trình cài đặt) chỉ chạy được trên GitHub Actions (`.github/workflows/windows.yml`, máy `windows-latest`). Nói rõ cái nào đã chạy thật trên Windows, cái nào chưa, và đừng tuyên bố một hành vi Windows "chạy đúng" chỉ vì nó biên dịch được.
+- **.NET 8 SDK cài bằng Homebrew, keg-only.** Mỗi lệnh phải đặt `DOTNET_ROOT=/opt/homebrew/opt/dotnet@8/libexec` và `PATH="/opt/homebrew/opt/dotnet@8/bin:$PATH"` (hoặc dùng một script bọc nhỏ). Gỡ bằng `brew uninstall dotnet@8`.
+- **Không có XAML.** SDK trên Mac không có `Microsoft.NET.Sdk.WindowsDesktop` nên `UseWPF` không build được ngoài Windows. Dự án dùng `FrameworkReference` tới WPF/WinForms và dựng toàn bộ giao diện bằng code C#, để trình biên dịch kiểm tra được ngay trên Mac. Đừng thêm file `.xaml`.
+- **Mọi quyết định nằm trong `ShelfDrop.Core`** (không gọi API Windows, test được trên Mac). `ShelfDrop.App` chỉ nối đối tượng thật vào. Thêm hành vi thì viết ở Core kèm test trước.
+- **Cảnh báo = lỗi** (`TreatWarningsAsErrors`). Chạy `dotnet build windows/ShelfDrop.Windows.sln -c Release` trước khi báo xong.
+- **Hook chuột phải trả về nhanh**: chỉ nuôi `DragTracker`; việc nặng (mở cửa sổ) chạy sau qua `Dispatcher.BeginInvoke`, nếu không Windows sẽ gỡ hook.
+- **Test cần Windows không được chạm vào máy người chạy**: registry thử dùng khóa riêng `Software\ShelfDropTests\<guid>`, test dùng chuột giả lập chỉ chạy khi `SHELFDROP_INTERACTIVE_TESTS=1` (CI đặt biến này).
+- Icon Windows: `swift Scripts/make_icon.swift --windows` (ghi `windows/src/ShelfDrop.App/Assets/ShelfDrop.ico`).
+- Phát hành bản Windows dùng tag riêng `win-vX.Y.Z` để không đụng tới các bản macOS `vX.Y.Z`. Trình cài đặt chỉ tạo được trên CI: tải artifact `ShelfDrop-Setup` của lần chạy tương ứng bằng `gh run download`, tính SHA-256, rồi `gh release create win-vX.Y.Z` (không dùng `--latest`, để `/releases/latest` vẫn trỏ về bản macOS).
+
 ## Khi chạy lệnh trên máy này
 
 - Các bước xóa thư mục hoặc dùng biến trong `rm` hay bị công cụ chặn. Viết `"${VAR:?}"` thay vì `$VAR`, và đừng xóa thư mục đang là thư mục làm việc (đổi sang chỗ khác trước).

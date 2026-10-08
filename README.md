@@ -4,6 +4,8 @@
 
 **[⬇ Tải bản cài (.dmg)](https://github.com/Dat98it/ShelfDrop/releases/latest)**: mở file, kéo `ShelfDrop` vào `Applications`. App chưa được notarize nên lần mở đầu macOS sẽ chặn, xem [cách cho phép](#cài-trên-máy-khác).
 
+**Dùng Windows?** Có bản riêng viết bằng C# / .NET 8 / WPF trong thư mục [`windows/`](windows/README.md), cùng bộ tính năng và cùng cách dùng (lắc chuột khi đang kéo). Tình trạng kiểm chứng của bản đó được ghi rõ trong tài liệu của nó.
+
 <p align="center"><img src="Images/01-hero-dark.png" alt="ShelfDrop: kệ nổi trên màn hình macOS, chứa ảnh, PDF, thư mục, file zip, link và ghi chú" width="880"></p>
 
 Khi đang kéo một file, **lắc chuột ngang** và kệ nổi lên ngay dưới con trỏ. Thả file vào kệ, chuyển sang app hoặc thư mục khác, kéo thêm file nữa, rồi kéo cả nhóm ra chỗ đích.
@@ -155,6 +157,7 @@ Rồi bỏ ShelfDrop khỏi **System Settings → General → Login Items** nế
 swift build                        # biên dịch
 swift test                         # chạy bộ test
 swift Scripts/make_icon.swift      # vẽ lại icon: ghi Resources/AppIcon.icns (thêm tham số thứ hai để xuất ảnh PNG xem thử)
+swift Scripts/make_icon.swift --windows   # cùng hình vẽ, xuất icon .ico cho bản Windows
 ```
 
 Test dùng **Swift Testing** vì Command Line Tools không có XCTest. Lưu ý khi chạy test:
@@ -206,7 +209,7 @@ Tests/ShelfDropTests/           114 test
 
 ## Hạn chế đã biết
 
-- Chỉ chạy trên macOS. Chưa thử trên macOS 14 và 15.
+- Bản này chỉ chạy trên macOS (bản Windows nằm ở [`windows/`](windows/README.md)). Chưa thử trên macOS 14 và 15.
 - Bản `.dmg` có cả slice Intel (x86_64) nhưng slice này mới chỉ được build, **chưa chạy thử** (máy phát triển không có Rosetta). Slice Apple Silicon đã chạy thử từ chính file `.dmg`.
 - Item trên kệ không được giữ lại khi thoát app.
 - Khi bấm `x` của kệ, bản sao tạm của item **vừa được chia sẻ** không bị xóa ngay: một dịch vụ như AirDrop có thể vẫn đang đọc file đó, xóa giữa chừng sẽ làm hỏng lần gửi. Các bản sao này được dọn khi mở app lần sau.
