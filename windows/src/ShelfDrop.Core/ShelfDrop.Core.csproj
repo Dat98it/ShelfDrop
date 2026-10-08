@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Everything here is plain .NET with no Windows API, so it builds and is tested on any OS. -->
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>ShelfDrop.Core</RootNamespace>
+    <AssemblyName>ShelfDrop.Core</AssemblyName>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="ShelfDrop.Core.Tests" />
+  </ItemGroup>
+
+</Project>
