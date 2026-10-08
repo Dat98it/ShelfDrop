@@ -2,7 +2,7 @@
 
 Bản Windows của ShelfDrop: một "kệ" tạm để gom file, ảnh, link và đoạn văn từ nhiều nơi rồi kéo cả nhóm đi một lần. **Lắc chuột khi đang kéo** thì kệ hiện ra ngay cạnh con trỏ. Cùng ý tưởng và cùng bộ tính năng với [bản macOS](../README.md), viết bằng C# / .NET 8 / WPF.
 
-> **Trạng thái kiểm chứng.** Máy phát triển là Mac, không có Windows thật. Phần logic dùng chung được kiểm bằng test ngay trên Mac; phần dành riêng cho Windows (cửa sổ, hook chuột, kéo thả, chia sẻ, khay hệ thống, trình cài đặt) chỉ được build, test và chạy thử bằng một máy Windows tự động của GitHub Actions. Mục [Đã kiểm chứng đến đâu](#đã-kiểm-chứng-đến-đâu) ghi rõ cái nào đã chạy thật, cái nào chưa.
+> **Trạng thái kiểm chứng.** Máy phát triển là Mac, không có Windows thật. Phần logic dùng chung được kiểm bằng test ngay trên Mac; phần dành riêng cho Windows (cửa sổ, hook chuột, kéo thả, chia sẻ, khay hệ thống, trình cài đặt) được build, test và **chạy thử bằng chuột giả lập** trên một máy Windows của GitHub Actions. Mục [Đã kiểm chứng đến đâu](#đã-kiểm-chứng-đến-đâu) ghi rõ cái nào đã chạy thật, cái nào chưa.
 
 ## Tính năng
 
@@ -82,17 +82,30 @@ Mỗi lần đẩy mã có động tới `windows/`, [workflow `Windows`](../.gi
 1. build cả solution (cảnh báo = lỗi);
 2. chạy test của lõi và test của lớp Windows (chụp ảnh giao diện sáng/tối, trạng thái trống, trạng thái đang kéo vào, cỡ nhỏ nhất/rộng nhất → artifact `windows-results`);
 3. đóng gói `ShelfDrop.exe` tự chứa;
-4. **chạy thử bằng chuột giả lập** ([`scripts/smoke-test.ps1`](scripts/smoke-test.ps1)): lắc khi kéo để mở kệ, kệ trống tự đóng, kéo kệ rồi kiểm tra vị trí được lưu, đổi cỡ bằng góc kéo, mở lại đúng chỗ cũ, thả một file từ chương trình khác vào kệ, kéo item ra lại chương trình đó;
+4. **chạy thử bằng chuột giả lập** ([`scripts/smoke-test.ps1`](scripts/smoke-test.ps1)): lắc khi kéo để mở kệ, kệ trống tự đóng, kéo kệ rồi kiểm tra vị trí được lưu, đổi cỡ bằng góc kéo, mở lại đúng chỗ cũ, thả một file từ chương trình khác vào kệ, kéo item ra lại chương trình đó (kèm một phép thử đối chứng giữa hai cửa sổ thường để biết bộ kiểm tra có đủ sức lái kéo thả);
 5. dựng trình cài đặt và **kiểm tra nó** ([`scripts/verify-installer.ps1`](scripts/verify-installer.ps1)): cài yên lặng, có mục Start menu và Settings → Apps, chạy bản đã cài, gỡ, không còn gì sót (file, cài đặt, mục khởi động cùng Windows).
 
 ## Đã kiểm chứng đến đâu
 
-Cập nhật khi có kết quả từ máy Windows. **Đến nay:**
+Kiểm chứng trên **máy Windows thật của GitHub Actions** (Windows Server 2025, build 26100, chạy qua 3 lượt liên tiếp đều xanh), không phải trên máy của người dùng cuối.
 
-- ✅ Lõi C# (260 test) chạy xanh trên macOS; các điều kiện an toàn quan trọng đã được phá thử để chắc test bắt được lỗi.
-- ✅ Toàn bộ mã (kể cả WPF, hook, WinRT share) biên dịch sạch, 0 cảnh báo.
-- ✅ Cú pháp workflow và script PowerShell hợp lệ.
-- ⏳ Mọi thứ chạy trên Windows thật (test lớp Windows, chạy thử bằng chuột giả lập, trình cài đặt): đang chờ kết quả đầu tiên từ GitHub Actions.
+**Đã chạy thật trên Windows:**
+
+- 260 test của lõi và 49 test của lớp Windows (cửa sổ thật, registry thật, thumbnail của shell, hook chuột với chuột giả lập).
+- Bản `ShelfDrop.exe` tự chứa khởi động, vẽ giao diện sáng/tối (xem ảnh trong artifact `windows-results/test-pictures`).
+- **Lắc khi đang kéo thì kệ hiện lên trên cửa sổ khác mà không giành focus**; kệ trống tự đóng sau khi nhả chuột.
+- Kéo kệ bằng nền và kéo góc đổi cỡ; vị trí và kích thước được lưu và **lần chạy sau mở đúng chỗ cũ, đúng cỡ cũ**.
+- **Thả một file từ chương trình khác vào kệ**, rồi **kéo item ra lại chương trình đó**: file đến nơi và bản gốc còn nguyên (chỉ sao chép).
+- Trình cài đặt: cài yên lặng không cần quyền quản trị, có mục Start menu và Settings → Apps, không tự bật khởi động cùng Windows nếu không được yêu cầu, bản đã cài chạy được, gỡ xong không sót file, cài đặt hay mục khởi động.
+
+**Chưa kiểm chứng được (cần người dùng thử trên máy thật):**
+
+- Trên Windows 10/11 bản desktop: thumbnail thật của ảnh (máy CI hiển thị biểu tượng chung), màu nhấn theo máy, chế độ sáng/tối khi người dùng đổi trong Settings.
+- Hình dạng icon trong khay và việc bấm các mục của menu khay (mới kiểm tra phần logic và phần registry thật).
+- **Hộp chia sẻ của Windows**: mã đã biên dịch và có phương án dự phòng (chép vào clipboard), nhưng chưa mở được hộp chia sẻ thật.
+- Mục **Uninstall** bấm từ menu (logic được test bằng đối tượng giả, trình gỡ cài đặt được kiểm riêng; chưa chạy cả chuỗi từ menu).
+- Kéo từ trình duyệt hoặc Outlook (ảnh, link, tệp đính kèm): bộ đọc được test bằng dữ liệu giả lập, chưa với chương trình thật.
+- Nhiều màn hình, màn hình DPI cao hoặc lệch DPI, Windows 10, và cảnh báo SmartScreen.
 
 ## Giới hạn đã biết
 
