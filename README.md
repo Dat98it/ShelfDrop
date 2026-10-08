@@ -20,7 +20,8 @@ Khi đang kéo một file, **lắc chuột ngang** và kệ nổi lên ngay dư�
 - **Nhớ kích thước và vị trí** kệ, kể cả sau khi thoát app.
 - **Tự ẩn** nếu kệ còn trống khi cú kéo kết thúc ở chỗ khác.
 - **Tự chạy khi đăng nhập:** bật mục **Launch at Login** trong menu của icon trên menu bar (dấu tích cho biết đang bật).
-- Chỉ có icon trên menu bar (Show/Hide Shelf, Clear Shelf, Launch at Login, Quit), không có icon Dock. App có icon riêng, hiện trong Finder, Launchpad và Spotlight; icon trên menu bar là hình thu nhỏ của chính cái kệ (khung có thanh tiêu đề và ba thẻ), tự đổi màu theo thanh menu sáng/tối.
+- **Gỡ cài đặt nhanh:** mục **Uninstall ShelfDrop…** trong menu chuyển app vào Thùng rác, tắt Launch at Login và xóa cấu hình lẫn file tạm của app. File của bạn không bị đụng tới. Xem mục [Gỡ cài đặt](#gỡ-cài-đặt).
+- Chỉ có icon trên menu bar (Show/Hide Shelf, Clear Shelf, Launch at Login, Uninstall ShelfDrop…, Quit), không có icon Dock. App có icon riêng, hiện trong Finder, Launchpad và Spotlight; icon trên menu bar là hình thu nhỏ của chính cái kệ (khung có thanh tiêu đề và ba thẻ), tự đổi màu theo thanh menu sáng/tối.
 
 ## Ảnh chụp màn hình
 
@@ -125,6 +126,29 @@ defaults delete local.shelfdrop.app shelfWidth; defaults delete local.shelfdrop.
 defaults delete local.shelfdrop.app shelfTopLeftX; defaults delete local.shelfdrop.app shelfTopLeftY
 ```
 
+## Gỡ cài đặt
+
+Cách nhanh: bấm icon ShelfDrop trên thanh menu, chọn **Uninstall ShelfDrop…** rồi xác nhận. App sẽ:
+
+1. tắt **Launch at Login** (làm trước, khi app còn ở đúng chỗ);
+2. chuyển chính nó vào **Thùng rác** (không xóa vĩnh viễn, bạn vẫn đặt lại được cho tới khi dọn Thùng rác);
+3. xóa cấu hình (kích thước, vị trí kệ) và file tạm;
+4. thoát. Vài giây sau, một lệnh nền chạy khoảng 15 giây sẽ xóa nốt file cấu hình mà hệ thống ghi lại muộn, rồi tự dừng.
+
+File của bạn không bị đụng tới, vì kệ chỉ giữ tham chiếu. Nếu chuyển vào Thùng rác thất bại, app **không xóa gì cả** và khôi phục lại Launch at Login như cũ.
+
+Mục này chỉ bật khi app chạy từ một file `.app` có thể xóa (ví dụ trong `/Applications`). Nó bị tắt (lý do được ghi trong tooltip của mục) nếu app đang chạy từ ổ chỉ-đọc (như file `.dmg` đang mở), từ bản build dev, hoặc nếu tài khoản không có quyền xóa app khỏi thư mục hiện tại. Cấu hình dùng chung cho mọi bản sao của app trên máy, nên gỡ một bản sao cũng xóa cấu hình của các bản còn lại.
+
+Gỡ thủ công, nếu cần:
+
+```bash
+osascript -e 'tell application "ShelfDrop" to quit'
+rm -rf /Applications/ShelfDrop.app          # hoặc kéo vào Thùng rác
+defaults delete local.shelfdrop.app         # xóa cấu hình
+```
+
+Rồi bỏ ShelfDrop khỏi **System Settings → General → Login Items** nếu nó còn ở đó.
+
 ## Phát triển
 
 ```bash
@@ -137,7 +161,7 @@ Test dùng **Swift Testing** vì Command Line Tools không có XCTest. Lưu ý k
 
 - Test tạo và hiển thị panel thật, nên cần phiên đăng nhập có giao diện (không chạy được trên máy không có display). Panel có thể nhấp nháy trên màn hình trong lúc chạy.
 - Lần `swift test` đầu tiên sau khi sửa source đôi khi báo `plugin for module 'TestingMacros' not found`. Đây là lỗi của môi trường, chạy lại là được.
-- Test không đụng vào cấu hình thật: mỗi test dùng một vùng `UserDefaults` riêng và tự xóa khi xong, và mục Launch at Login được test qua một đối tượng giả nên không thay đổi Login Items của máy bạn.
+- Test không đụng vào máy bạn: cấu hình dùng một `UserDefaults` chạy hoàn toàn trong bộ nhớ (nên không để lại file nào trong `~/Library/Preferences`; cách dùng vùng cấu hình thật từng để lại hàng nghìn file rỗng vì `cfprefsd` ghi lại chúng sau khi test xong), còn Launch at Login và Uninstall được test qua các đối tượng giả nên không đổi Login Items và không xóa app, cấu hình hay file nào thật.
 
 ### Cấu trúc
 
@@ -152,6 +176,7 @@ Scripts/make_icon.swift         vẽ icon bằng code và xuất ra Resources/Ap
 Sources/ShelfDrop/
   main.swift, AppDelegate.swift       khởi động, status item, flush dữ liệu khi thoát
   LaunchAtLogin.swift                 mục Launch at Login (SMAppService), tách riêng để test được
+  Uninstaller.swift                   mục Uninstall: các chốt an toàn, thứ tự gỡ, hoàn tác khi lỗi, lệnh dọn nền
   StatusIcon.swift                    icon trên menu bar, vẽ bằng code dạng template image
   DragMonitor.swift                   phát hiện drag toàn hệ thống + lắc chuột
   ShakeDetector.swift                 logic lắc thuần, dễ test
@@ -168,7 +193,7 @@ Sources/ShelfDrop/
   WindowDragArea.swift                kéo chỗ trống để di chuyển kệ
   ResizeGrip.swift                    tay nắm đổi kích thước
   ShelfSizeStore.swift, ShelfPositionStore.swift   lưu kích thước, vị trí
-Tests/ShelfDropTests/           93 test
+Tests/ShelfDropTests/           114 test
 ```
 
 ### Cách hoạt động
