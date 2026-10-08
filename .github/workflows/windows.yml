@@ -9,7 +9,7 @@ on:
     tags: ['win-v*']
     paths:
       - 'windows/**'
-      - 'Scripts/make_icon.swift'
+      - 'macos/Scripts/make_icon.swift'
       - 'LICENSE'
       - '.github/workflows/windows.yml'
   pull_request:

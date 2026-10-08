@@ -1,8 +1,16 @@
 # ShelfDrop
 
-App menu bar cho macOS: một "kệ" tạm để gom file từ nhiều nơi rồi kéo cả nhóm đi một lần (lắc chuột khi đang kéo thì kệ hiện ra). Swift, AppKit + SwiftUI, build bằng SwiftPM, không cần Xcode. Cấu trúc thư mục và cách hoạt động nằm trong [README.md](README.md); file này chỉ ghi những điều **không thấy được từ code** nhưng dễ làm sai.
+Một "kệ" tạm để gom file từ nhiều nơi rồi kéo cả nhóm đi một lần (lắc chuột khi đang kéo thì kệ hiện ra). Repo có hai bản độc lập, mỗi bản trong thư mục riêng; file này chỉ ghi những điều **không thấy được từ code** nhưng dễ làm sai.
 
-## Lệnh thường dùng
+| Thư mục | Nội dung | Tài liệu |
+|---|---|---|
+| `macos/` | Bản macOS: Swift, AppKit + SwiftUI, build bằng SwiftPM, không cần Xcode | [README.md, phần macOS](README.md#macos) |
+| `windows/` | Bản Windows: C# / .NET 8 / WPF | [README.md, phần Windows](README.md#windows) |
+| (gốc) | `README.md` (**tài liệu duy nhất của dự án**, có phần riêng cho từng nền tảng), `LICENSE`, `CLAUDE.md` này, `.github/` (CI của bản Windows), `.gitignore` | |
+
+**Chỉ có một `README.md`, ở thư mục gốc**: tài liệu của cả hai bản nằm trong đó (đừng tạo lại README riêng trong `macos/` hay `windows/`; sửa phần tương ứng trong README gốc). **Mọi lệnh Swift và script của bản macOS chạy trong thư mục `macos/`** (`cd macos` trước), mọi lệnh `dotnet` của bản Windows chạy trong `windows/`. Đường dẫn trong phần macOS bên dưới tính từ `macos/`.
+
+## Lệnh thường dùng (bản macOS, trong `macos/`)
 
 ```bash
 swift build                              # biên dịch
@@ -30,7 +38,7 @@ open build/ShelfDrop.app --args --show-shelf     # mở sẵn kệ để xem gia
 
 ## Những cái bẫy đã gặp
 
-- **Sửa phiên bản trong `Resources/Info.plist` bằng sửa văn bản tối thiểu** (hai dòng `CFBundleShortVersionString` và `CFBundleVersion`). `PlistBuddy` viết lại cả file nên diff rất ồn.
+- **Sửa phiên bản trong `macos/Resources/Info.plist` bằng sửa văn bản tối thiểu** (hai dòng `CFBundleShortVersionString` và `CFBundleVersion`). `PlistBuddy` viết lại cả file nên diff rất ồn.
 - **`NSScrollView` của SwiftUI** với thanh cuộn kiểu cũ làm lưới bị cắt cột cuối, nên danh sách đang ẩn thanh cuộn (`.scrollIndicators(.hidden)`).
 - **Mục Uninstall** chỉ bật khi app là một `.app` có đúng định danh `local.shelfdrop.app`, không nằm trên ổ chỉ-đọc, và được phép xóa. Chạy `swift run` thì "bundle" là cả thư mục build; chốt này để không bao giờ chuyển nó vào Thùng rác.
 - Cấu hình dùng chung cho mọi bản sao app trên máy (cùng định danh), và Launch at Login ghi nhớ **bản đang chạy**. Bản trong `build/` bị script xóa và tạo lại mỗi lần build, nên đừng bật Launch at Login từ đó; chạy bản trong `/Applications`.
@@ -42,15 +50,15 @@ open build/ShelfDrop.app --args --show-shelf     # mở sẵn kệ để xem gia
 - **Không thêm trailer `Co-Authored-By`** vào commit.
 - Commit message viết bằng tiếng Anh, theo từng thay đổi lô-gic (mã nguồn kèm test, README, tăng phiên bản tách riêng). Chuỗi giao diện bằng tiếng Anh; README và ghi chú phát hành bằng tiếng Việt.
 
-## Quy trình phát hành
+## Quy trình phát hành (bản macOS)
 
 Khi được yêu cầu "commit, push và tạo release vX.Y.Z kèm file .dmg":
 
 1. Xem lại thay đổi đang chờ và `git log vTRƯỚC..`; commit theo từng phần.
-2. Tăng phiên bản trong `Resources/Info.plist` (tăng cả build number), chạy toàn bộ test, commit `Bump version to X.Y.Z`, push.
+2. Tăng phiên bản trong `macos/Resources/Info.plist` (tăng cả build number), chạy toàn bộ test, commit `Bump version to X.Y.Z`, push.
 3. `Scripts/make_dmg.sh`. Gắn file `.dmg` lên, kiểm tra phiên bản, `codesign --verify --deep --strict`, `lipo -archs`, icon, ký hiệu bằng `nm`, và chạy thử bản app lấy ra. Cây thư mục phải sạch và không file nguồn nào mới hơn `.dmg`.
 4. Viết ghi chú phát hành bằng tiếng Việt: có gì mới, cách cài, mục Gatekeeper, lưu ý, SHA-256 và link so sánh `vTRƯỚC...vX.Y.Z`. Hash trong ghi chú phải đúng bằng hash của file `.dmg`.
-5. `gh release create vX.Y.Z build/ShelfDrop-X.Y.Z.dmg --target "$(git rev-parse HEAD)" --latest --notes-file ...`.
+5. `gh release create vX.Y.Z macos/build/ShelfDrop-X.Y.Z.dmg --target "$(git rev-parse HEAD)" --latest --notes-file ...`.
 6. Kiểm lại: tag trỏ đúng commit, `digest` của file đính kèm trùng file ở máy, `/releases/latest` trỏ về bản mới.
 
 Chỉ phát hành khi được yêu cầu, và chỉ khi đã được cho biết số phiên bản.
@@ -61,7 +69,7 @@ App chỉ ký ad-hoc, chưa notarize. Bản tải về mang cờ cách ly nên l
 
 ## Bản Windows (`windows/`)
 
-C# / .NET 8 / WPF, cùng repo. Xem [windows/README.md](windows/README.md) cho cách hoạt động; ở đây chỉ ghi điều dễ làm sai:
+C# / .NET 8 / WPF, cùng repo. Xem [phần Windows trong README.md](README.md#windows) cho cách hoạt động; ở đây chỉ ghi điều dễ làm sai:
 
 - **Máy này không có Windows.** Chỉ có thể: build mọi dự án và chạy test của `ShelfDrop.Core.Tests` (260+ test) tại chỗ, còn lại (test lớp Windows, chạy thử chương trình, trình cài đặt) chỉ chạy được trên GitHub Actions (`.github/workflows/windows.yml`, máy `windows-latest`). Nói rõ cái nào đã chạy thật trên Windows, cái nào chưa, và đừng tuyên bố một hành vi Windows "chạy đúng" chỉ vì nó biên dịch được.
 - **.NET 8 SDK cài bằng Homebrew, keg-only.** Mỗi lệnh phải đặt `DOTNET_ROOT=/opt/homebrew/opt/dotnet@8/libexec` và `PATH="/opt/homebrew/opt/dotnet@8/bin:$PATH"` (hoặc dùng một script bọc nhỏ). Gỡ bằng `brew uninstall dotnet@8`.
@@ -70,7 +78,7 @@ C# / .NET 8 / WPF, cùng repo. Xem [windows/README.md](windows/README.md) cho c�
 - **Cảnh báo = lỗi** (`TreatWarningsAsErrors`). Chạy `dotnet build windows/ShelfDrop.Windows.sln -c Release` trước khi báo xong.
 - **Hook chuột phải trả về nhanh**: chỉ nuôi `DragTracker`; việc nặng (mở cửa sổ) chạy sau qua `Dispatcher.BeginInvoke`, nếu không Windows sẽ gỡ hook.
 - **Test cần Windows không được chạm vào máy người chạy**: registry thử dùng khóa riêng `Software\ShelfDropTests\<guid>`, test dùng chuột giả lập chỉ chạy khi `SHELFDROP_INTERACTIVE_TESTS=1` (CI đặt biến này).
-- Icon Windows: `swift Scripts/make_icon.swift --windows` (ghi `windows/src/ShelfDrop.App/Assets/ShelfDrop.ico`).
+- Icon Windows: chạy `swift Scripts/make_icon.swift --windows` **trong `macos/`** (ghi `windows/src/ShelfDrop.App/Assets/ShelfDrop.ico`). Script nằm ở `macos/` vì nó vẽ bằng AppKit, chỉ chạy được trên Mac.
 - Phát hành bản Windows dùng tag riêng `win-vX.Y.Z` để không đụng tới các bản macOS `vX.Y.Z`. Trình cài đặt chỉ tạo được trên CI: tải artifact `ShelfDrop-Setup` của lần chạy tương ứng bằng `gh run download`, tính SHA-256, rồi `gh release create win-vX.Y.Z` (không dùng `--latest`, để `/releases/latest` vẫn trỏ về bản macOS).
 
 ## Khi chạy lệnh trên máy này
