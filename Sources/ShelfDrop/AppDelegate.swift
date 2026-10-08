@@ -25,10 +25,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func setUpStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
-        item.button?.image = NSImage(
-            systemSymbolName: "tray.and.arrow.down",
-            accessibilityDescription: "ShelfDrop"
-        )
+        item.button?.image = StatusIcon.make()
+        item.button?.toolTip = "ShelfDrop"
 
         let menu = NSMenu()
         menu.addItem(withTitle: "Show/Hide Shelf", action: #selector(toggleShelf), keyEquivalent: "").target = self
