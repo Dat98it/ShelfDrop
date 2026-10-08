@@ -5,6 +5,10 @@
 //   output.icns  default: Resources/AppIcon.icns
 //   preview.png  optional: also write the 1024x1024 master, for looking at the design
 //
+//        swift Scripts/make_icon.swift --windows [output.ico]
+//   Same artwork for the Windows app, drawn larger in its canvas (Windows icons have no
+//   built-in margin) and packed as a multi-size .ico. default: windows/src/ShelfDrop.App/Assets/ShelfDrop.ico
+//
 // The icon is drawn in a 1024-unit design space (Apple's macOS icon grid: an 824-unit body
 // centred in the canvas, leaving room for the shadow) and re-rendered at each size, so small
 // sizes are drawn crisply instead of being shrunk from the big one.
@@ -180,7 +184,8 @@ func drawIcon() {
     }
 }
 
-func render(pixels: Int) -> Data {
+/// `zoom` > 1 draws the artwork larger about the centre of the canvas (the Windows icon).
+func renderBitmap(pixels: Int, zoom: CGFloat = 1) -> NSBitmapImageRep {
     let rep = NSBitmapImageRep(
         bitmapDataPlanes: nil, pixelsWide: pixels, pixelsHigh: pixels, bitsPerSample: 8, samplesPerPixel: 4,
         hasAlpha: true, isPlanar: false, colorSpaceName: .calibratedRGB, bytesPerRow: 0, bitsPerPixel: 0
@@ -189,16 +194,79 @@ func render(pixels: Int) -> Data {
     NSGraphicsContext.current = NSGraphicsContext(bitmapImageRep: rep)
     NSGraphicsContext.current?.imageInterpolation = .high
     let scale = NSAffineTransform()
-    scale.scale(by: CGFloat(pixels) / 1024)
+    scale.translateX(by: CGFloat(pixels) / 2, yBy: CGFloat(pixels) / 2)
+    scale.scale(by: CGFloat(pixels) / 1024 * zoom)
+    scale.translateX(by: -512, yBy: -512)
     scale.concat()
     drawIcon()
     NSGraphicsContext.restoreGraphicsState()
-    return rep.representation(using: .png, properties: [:])!
+    return rep
+}
+
+func render(pixels: Int, zoom: CGFloat = 1) -> Data {
+    renderBitmap(pixels: pixels, zoom: zoom).representation(using: .png, properties: [:])!
+}
+
+// MARK: - Windows .ico
+
+/// Small sizes as classic bitmap entries (every Windows API reads those), large ones as PNG.
+func icoEntry(pixels: Int, zoom: CGFloat) -> Data {
+    let png = render(pixels: pixels, zoom: zoom)
+    guard pixels <= 48 else { return png }
+
+    // Decode the PNG again so the pixels come out as plain, non-premultiplied RGBA.
+    let rep = NSBitmapImageRep(data: png)!
+    precondition(rep.pixelsWide == pixels && rep.bitsPerPixel == 32 && !rep.bitmapFormat.contains(.alphaFirst), "unexpected pixel layout")
+    let premultiplied = !rep.bitmapFormat.contains(.alphaNonpremultiplied)
+    let source = rep.bitmapData!
+
+    var data = Data()
+    func put32(_ v: Int) { var x = UInt32(truncatingIfNeeded: v).littleEndian; withUnsafeBytes(of: &x) { data.append(contentsOf: $0) } }
+    func put16(_ v: Int) { var x = UInt16(truncatingIfNeeded: v).littleEndian; withUnsafeBytes(of: &x) { data.append(contentsOf: $0) } }
+    put32(40); put32(pixels); put32(pixels * 2); put16(1); put16(32)   // BITMAPINFOHEADER: height covers the colour and mask halves
+    put32(0); put32(pixels * pixels * 4); put32(0); put32(0); put32(0); put32(0)
+
+    for y in stride(from: pixels - 1, through: 0, by: -1) {            // bottom-up
+        for x in 0..<pixels {
+            let p = source + y * rep.bytesPerRow + x * 4
+            var (r, g, b, a) = (Int(p[0]), Int(p[1]), Int(p[2]), Int(p[3]))
+            if premultiplied && a > 0 && a < 255 { r = min(255, r * 255 / a); g = min(255, g * 255 / a); b = min(255, b * 255 / a) }
+            data.append(contentsOf: [UInt8(b), UInt8(g), UInt8(r), UInt8(a)])
+        }
+    }
+    data.append(Data(count: ((pixels + 31) / 32) * 4 * pixels))         // AND mask: all zero, alpha does the work
+    return data
+}
+
+func writeWindowsIcon(to path: String) throws {
+    let sizes = [16, 20, 24, 32, 40, 48, 64, 96, 128, 256]
+    let zoom: CGFloat = 1.12   // the body then fills about 90% of the canvas
+    let entries = sizes.map { ($0, icoEntry(pixels: $0, zoom: zoom)) }
+
+    var ico = Data()
+    func put16(_ v: Int) { var x = UInt16(v).littleEndian; withUnsafeBytes(of: &x) { ico.append(contentsOf: $0) } }
+    func put32(_ v: Int) { var x = UInt32(v).littleEndian; withUnsafeBytes(of: &x) { ico.append(contentsOf: $0) } }
+    put16(0); put16(1); put16(entries.count)
+    var offset = 6 + 16 * entries.count
+    for (pixels, entry) in entries {
+        ico.append(contentsOf: [UInt8(pixels == 256 ? 0 : pixels), UInt8(pixels == 256 ? 0 : pixels), 0, 0])
+        put16(1); put16(32); put32(entry.count); put32(offset)
+        offset += entry.count
+    }
+    for (_, entry) in entries { ico.append(entry) }
+    try FileManager.default.createDirectory(atPath: (path as NSString).deletingLastPathComponent, withIntermediateDirectories: true)
+    try ico.write(to: URL(fileURLWithPath: path))
+    print("Wrote \(path) (\(entries.count) sizes, \(ico.count) bytes)")
 }
 
 // MARK: - Main
 
 let arguments = CommandLine.arguments
+if arguments.count > 1, arguments[1] == "--windows" {
+    _ = NSApplication.shared
+    try writeWindowsIcon(to: arguments.count > 2 ? arguments[2] : "windows/src/ShelfDrop.App/Assets/ShelfDrop.ico")
+    exit(0)
+}
 let output = arguments.count > 1 ? arguments[1] : "Resources/AppIcon.icns"
 let preview = arguments.count > 2 ? arguments[2] : nil
 
