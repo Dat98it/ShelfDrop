@@ -361,7 +361,21 @@ namespace ShelfDrop.App.UI
         protected override void OnDragEnter(DragEventArgs e)
         {
             base.OnDragEnter(e);
+            // What a drag offers is the first thing to look at when something does not arrive, so it goes in the log.
+            Log.Info("drag entered the shelf; formats: " + string.Join(", ", SafeFormats(e.Data)));
             AcceptOrRefuse(e);
+        }
+
+        private static string[] SafeFormats(System.Windows.IDataObject data)
+        {
+            try
+            {
+                return data.GetFormats();
+            }
+            catch (System.Runtime.InteropServices.COMException)
+            {
+                return new[] { "(could not be read)" };
+            }
         }
 
         protected override void OnDragOver(DragEventArgs e)
@@ -382,6 +396,7 @@ namespace ShelfDrop.App.UI
             base.OnDrop(e);
             if (_controller == null || _importer == null) return;
             _controller.Model.IsDropTargeted = false;
+            Log.Info("drop on the shelf; formats: " + string.Join(", ", SafeFormats(e.Data)));
             if (_dragOut.IsDragging) return;
 
             try

@@ -58,8 +58,7 @@ namespace ShelfDrop.App.UI
         public static void Apply(bool dark)
         {
             ResourceDictionary resources = Application.Current.Resources;
-            Color accent = SystemParameters.WindowGlassColor;
-            accent.A = 255;
+            Color accent = SystemAccent(dark);
 
             if (dark)
             {
@@ -107,6 +106,27 @@ namespace ShelfDrop.App.UI
             IsDark = dark;
             Changed?.Invoke();
             if (changed) Log.Info("theme: " + (dark ? "dark" : "light"));
+        }
+
+        /// <summary>
+        /// The accent colour the user picked in Windows' settings. A lighter shade on a dark panel, as Windows' own apps do,
+        /// so that it stays readable there.
+        /// </summary>
+        private static Color SystemAccent(bool dark)
+        {
+            try
+            {
+                Windows.UI.Color c = new Windows.UI.ViewManagement.UISettings().GetColorValue(
+                    dark ? Windows.UI.ViewManagement.UIColorType.AccentLight1 : Windows.UI.ViewManagement.UIColorType.Accent);
+                return Color.FromRgb(c.R, c.G, c.B);
+            }
+            catch (Exception e)
+            {
+                Log.Error("could not read the system accent colour", e);
+                Color glass = SystemParameters.WindowGlassColor;
+                glass.A = 255;
+                return glass;
+            }
         }
 
         private static Color Argb(byte a, byte r, byte g, byte b) => Color.FromArgb(a, r, g, b);
