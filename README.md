@@ -290,9 +290,12 @@ Mã nguồn ở `windows/`, viết bằng C# / .NET 8 / WPF. Cách dùng giống
 
 [Tải ShelfDrop-Setup-0.1.0.exe](https://github.com/Dat98it/ShelfDrop/releases/download/win-v0.1.0/ShelfDrop-Setup-0.1.0.exe) (khoảng 70 MB) rồi chạy. Không cần quyền quản trị, và không cần cài .NET vì chương trình đã gói sẵn.
 
-1. Windows có thể hiện "Windows protected your PC" vì file chưa ký số. Chọn More info, rồi Run anyway. Xem thêm ở [Giới hạn đã biết](#giới-hạn-đã-biết).
-2. Làm theo trình cài đặt. Chương trình vào `%LocalAppData%\Programs\ShelfDrop`, hiện trong Settings → Apps và gỡ ở đó như mọi ứng dụng khác. Ô "Start ShelfDrop when I sign in to Windows" mặc định tắt.
-3. Icon ShelfDrop nằm ở khay hệ thống (nếu không thấy, bấm mũi tên ^ cạnh đồng hồ). Nhấp vào icon để mở kệ, hoặc kéo thử một file rồi lắc chuột.
+File chưa được ký số và còn ít người tải, nên trình duyệt và Windows có thể cảnh báo hai lần: lúc tải và lúc chạy. Đó là cảnh báo về độ phổ biến, không phải lỗi tải và không có nghĩa file bị coi là mã độc. Làm lần lượt:
+
+1. Lúc tải, Edge hoặc Chrome có thể báo "ShelfDrop-Setup-0.1.0.exe isn't commonly downloaded". Trong Edge, bấm See more (hoặc dấu … cạnh file) rồi chọn Keep. Nếu Edge hỏi thêm thì chọn Show more, rồi Keep anyway. Chrome có bước tương tự: chọn Keep trong khung tải xuống (tên nút có thể khác đôi chút tùy phiên bản). Nếu còn ngại, kiểm SHA-256 như hướng dẫn bên dưới trước khi chạy file.
+2. Mở file đã tải. Windows có thể hiện "Windows protected your PC": chọn More info, rồi Run anyway.
+3. Làm theo trình cài đặt. Chương trình vào `%LocalAppData%\Programs\ShelfDrop`, hiện trong Settings → Apps và gỡ ở đó như mọi ứng dụng khác. Ô "Start ShelfDrop when I sign in to Windows" mặc định tắt.
+4. Icon ShelfDrop nằm ở khay hệ thống (nếu không thấy, bấm mũi tên ^ cạnh đồng hồ). Nhấp vào icon để mở kệ, hoặc kéo thử một file rồi lắc chuột.
 
 Muốn kiểm tra file tải về, SHA-256 nằm trong [ghi chú phát hành](https://github.com/Dat98it/ShelfDrop/releases/tag/win-v0.1.0). Trong PowerShell: `Get-FileHash .\ShelfDrop-Setup-0.1.0.exe -Algorithm SHA256`. Các bản Windows khác (nếu có) nằm ở trang [Releases](https://github.com/Dat98it/ShelfDrop/releases), tag `win-v…`.
 
@@ -384,7 +387,7 @@ Chưa kiểm chứng được, cần ai đó thử trên máy thật:
 
 ### Giới hạn đã biết
 
-- Chưa ký số, nên SmartScreen sẽ cảnh báo ở lần chạy đầu. Ký số cần chứng chỉ trả phí.
+- Chưa ký số, nên trình duyệt có thể báo "isn't commonly downloaded" lúc tải và SmartScreen cảnh báo lúc chạy lần đầu (cách qua các cảnh báo này nằm ở mục [Cài đặt](#cài-đặt)). Ký số cần chứng chỉ trả phí.
 - Lắc khi đang giữ chuột ở đâu cũng bị tính là "kéo", không phân biệt kéo file với vẽ hay bôi đen chữ. Hậu quả không lớn: nếu kệ còn trống thì nó hiện ra rồi tự ẩn khi nhả chuột. Ngoài ra, hook chuột thường không thấy thao tác trong cửa sổ chạy với quyền quản trị (cơ chế UIPI của Windows), nên lắc từ cửa sổ đó không mở được kệ.
 - Khi kéo item ra chỉ có biểu tượng sao chép, không có ảnh mờ đi theo con trỏ.
 - Kệ không hiện trên màn hình đang chạy ứng dụng toàn màn hình độc quyền (một số game).
