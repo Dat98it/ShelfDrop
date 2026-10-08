@@ -6,6 +6,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let shelf = ShelfController()
     private let launchAtLogin = LaunchAtLogin(service: SystemLoginItemService())
     private var launchAtLoginItem: NSMenuItem?
+    private let uninstaller = Uninstaller(loginItem: SystemLoginItemService())
+    private var uninstallItem: NSMenuItem?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         TempStorage.cleanUp()
@@ -37,8 +39,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         loginItem.state = launchAtLogin.menuState
         launchAtLoginItem = loginItem
         menu.addItem(.separator())
+        let uninstall = menu.addItem(withTitle: "Uninstall ShelfDrop…", action: #selector(uninstallApp), keyEquivalent: "")
+        uninstall.target = self
+        uninstallItem = uninstall
+        menu.addItem(.separator())
         menu.addItem(withTitle: "Quit ShelfDrop", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q")
-        // The setting can change outside the app (System Settings), so refresh it each time the menu opens.
+        // Uninstall is enabled or not by whether the app can safely remove itself from where it is.
+        menu.autoenablesItems = false
+        // The settings can change outside the app (System Settings), so refresh the menu each time it opens.
         menu.delegate = self
         item.menu = menu
         statusItem = item
@@ -65,7 +73,49 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         launchAtLoginItem?.state = launchAtLogin.menuState
     }
 
+    @objc private func uninstallApp() {
+        guard case .available = uninstaller.availability else { return }
+
+        let confirmation = uninstaller.confirmation()
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = confirmation.title
+        alert.informativeText = confirmation.message
+        // The first button is the default one (Return), so the safe choice is the one a stray key press picks.
+        alert.addButton(withTitle: confirmation.cancelButton)
+        alert.addButton(withTitle: confirmation.confirmButton).hasDestructiveAction = true
+        NSApp.activate()
+        guard alert.runModal() == .alertSecondButtonReturn else { return }
+
+        switch uninstaller.uninstall() {
+        case .removed(let warnings):
+            // The settings are gone now; make sure quitting does not write them back.
+            shelf.cancelPendingSaves()
+            if !warnings.isEmpty { showAlert(title: "ShelfDrop was moved to the Trash", message: warnings.joined(separator: "\n\n")) }
+            NSApp.terminate(nil)
+        case .failed(let message):
+            showAlert(title: "Couldn't uninstall ShelfDrop", message: message)
+        }
+    }
+
+    private func showAlert(title: String, message: String) {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = title
+        alert.informativeText = message
+        NSApp.activate()
+        alert.runModal()
+    }
+
     func menuNeedsUpdate(_ menu: NSMenu) {
         launchAtLoginItem?.state = launchAtLogin.menuState
+        switch uninstaller.availability {
+        case .available:
+            uninstallItem?.isEnabled = true
+            uninstallItem?.toolTip = nil
+        case .unavailable(let reason):
+            uninstallItem?.isEnabled = false
+            uninstallItem?.toolTip = reason
+        }
     }
 }

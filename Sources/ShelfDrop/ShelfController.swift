@@ -112,6 +112,13 @@ final class ShelfController {
         }
     }
 
+    /// Drops a position change that is still waiting on its debounce timer without writing it.
+    /// Used when uninstalling, so the app does not write its settings back after deleting them.
+    func cancelPendingSaves() {
+        pendingPositionSave?.invalidate()
+        pendingPositionSave = nil
+    }
+
     /// Writes a position change that is still waiting on its debounce timer. Call before quitting.
     func flushPendingSaves() {
         guard let pending = pendingPositionSave else { return }
