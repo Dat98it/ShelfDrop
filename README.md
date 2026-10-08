@@ -20,7 +20,7 @@ Khi đang kéo một file, **lắc chuột ngang** và kệ nổi lên ngay dư�
 - **Nhớ kích thước và vị trí** kệ, kể cả sau khi thoát app.
 - **Tự ẩn** nếu kệ còn trống khi cú kéo kết thúc ở chỗ khác.
 - **Tự chạy khi đăng nhập:** bật mục **Launch at Login** trong menu của icon trên menu bar (dấu tích cho biết đang bật).
-- Chỉ có icon trên menu bar (Show/Hide Shelf, Clear Shelf, Launch at Login, Quit), không có icon Dock. App có icon riêng, hiện trong Finder, Launchpad và Spotlight.
+- Chỉ có icon trên menu bar (Show/Hide Shelf, Clear Shelf, Launch at Login, Quit), không có icon Dock. App có icon riêng, hiện trong Finder, Launchpad và Spotlight; icon trên menu bar là hình thu nhỏ của chính cái kệ (khung có thanh tiêu đề và ba thẻ), tự đổi màu theo thanh menu sáng/tối.
 
 ## Ảnh chụp màn hình
 
@@ -152,6 +152,7 @@ Scripts/make_icon.swift         vẽ icon bằng code và xuất ra Resources/Ap
 Sources/ShelfDrop/
   main.swift, AppDelegate.swift       khởi động, status item, flush dữ liệu khi thoát
   LaunchAtLogin.swift                 mục Launch at Login (SMAppService), tách riêng để test được
+  StatusIcon.swift                    icon trên menu bar, vẽ bằng code dạng template image
   DragMonitor.swift                   phát hiện drag toàn hệ thống + lắc chuột
   ShakeDetector.swift                 logic lắc thuần, dễ test
   ShelfController.swift               nối monitor, panel, model; đặt vị trí, kích thước
@@ -167,7 +168,7 @@ Sources/ShelfDrop/
   WindowDragArea.swift                kéo chỗ trống để di chuyển kệ
   ResizeGrip.swift                    tay nắm đổi kích thước
   ShelfSizeStore.swift, ShelfPositionStore.swift   lưu kích thước, vị trí
-Tests/ShelfDropTests/           88 test
+Tests/ShelfDropTests/           93 test
 ```
 
 ### Cách hoạt động
