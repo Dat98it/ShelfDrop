@@ -1,0 +1,127 @@
+name: Windows
+
+# Builds the Windows version of ShelfDrop (windows/), runs its tests, tries the finished program the way a person would,
+# and builds and checks the installer. It runs on a real Windows machine, the only place all of that can happen.
+
+on:
+  push:
+    branches: ['**']
+    tags: ['win-v*']
+    paths:
+      - 'windows/**'
+      - 'Scripts/make_icon.swift'
+      - 'LICENSE'
+      - '.github/workflows/windows.yml'
+  pull_request:
+    paths:
+      - 'windows/**'
+      - 'LICENSE'
+      - '.github/workflows/windows.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: windows-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: windows
+    env:
+      DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+      DOTNET_NOLOGO: '1'
+      # The tests that drive the real mouse only run here, where nobody is using the machine.
+      SHELFDROP_INTERACTIVE_TESTS: '1'
+      SHELFDROP_ARTIFACTS: ${{ github.workspace }}\artifacts\test-pictures
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Show the machine
+        run: |
+          dotnet --info
+          Add-Type -AssemblyName System.Windows.Forms
+          $screen = [System.Windows.Forms.Screen]::PrimaryScreen
+          "Primary screen: $($screen.Bounds.Width) x $($screen.Bounds.Height)"
+          "Session: $env:SESSIONNAME / interactive: $([Environment]::UserInteractive)"
+
+      - name: Build
+        id: build
+        run: dotnet build ShelfDrop.Windows.sln -c Release --nologo
+
+      - name: Test the shared logic
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: >
+          dotnet test tests/ShelfDrop.Core.Tests -c Release --no-build --nologo
+          --logger "trx;LogFileName=core.trx" --results-directory "${{ github.workspace }}\artifacts\test-results"
+
+      - name: Test the Windows layer
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: >
+          dotnet test tests/ShelfDrop.App.Tests -c Release --no-build --nologo
+          --logger "trx;LogFileName=app.trx" --logger "console;verbosity=normal"
+          --results-directory "${{ github.workspace }}\artifacts\test-results"
+
+      - name: Publish one self-contained program
+        id: publish
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: >
+          dotnet publish src/ShelfDrop.App -c Release -r win-x64 --self-contained
+          -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true
+          -p:DebugType=none -p:DebugSymbols=false -o publish
+
+      - name: Try the program like a person would
+        if: ${{ !cancelled() && steps.publish.outcome == 'success' }}
+        run: ./scripts/smoke-test.ps1 -Exe publish\ShelfDrop.exe -Artifacts "${{ github.workspace }}\artifacts\smoke"
+
+      - name: Install Inno Setup
+        id: inno
+        if: ${{ !cancelled() && steps.publish.outcome == 'success' }}
+        run: choco install innosetup --no-progress -y
+
+      - name: Build the installer
+        id: installer
+        if: ${{ !cancelled() && steps.inno.outcome == 'success' }}
+        run: |
+          $version = ([xml](Get-Content Directory.Build.props)).Project.PropertyGroup.Version
+          "Version: $version"
+          & "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe" "/DAppVersion=$version" "/DSourceDir=..\publish" installer\ShelfDrop.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed with $LASTEXITCODE" }
+          Get-ChildItem dist | Format-Table Name, Length
+
+      - name: Check the installer
+        if: ${{ !cancelled() && steps.installer.outcome == 'success' }}
+        run: ./scripts/verify-installer.ps1 -Installer (Get-ChildItem dist\ShelfDrop-Setup-*.exe).FullName -Artifacts "${{ github.workspace }}\artifacts\installer"
+
+      - name: Fingerprint the installer
+        if: ${{ !cancelled() && steps.installer.outcome == 'success' }}
+        run: |
+          Get-ChildItem dist\ShelfDrop-Setup-*.exe | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+            "$hash  $($_.Name)" | Tee-Object -FilePath "$($_.FullName).sha256"
+          }
+
+      - name: Keep the results
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-results
+          path: artifacts
+          if-no-files-found: warn
+
+      - name: Keep the installer
+        if: ${{ !cancelled() && steps.installer.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ShelfDrop-Setup
+          path: |
+            windows/dist/ShelfDrop-Setup-*.exe
+            windows/dist/ShelfDrop-Setup-*.exe.sha256
